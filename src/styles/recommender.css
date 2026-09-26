@@ -1,0 +1,165 @@
+/* RECOMMENDER */
+
+.recommender {
+  max-width: 1250px;
+
+  margin: auto;
+
+  padding: 110px 5%;
+}
+
+.section-heading {
+  margin-bottom: 70px;
+
+  max-width: 850px;
+}
+
+.section-heading span {
+  font-family: monospace;
+  font-weight: bold;
+}
+
+.section-heading h2 {
+  font-size: clamp(45px, 6vw, 80px);
+
+  line-height: 0.95;
+
+  margin: 16px 0;
+
+  letter-spacing: -4px;
+}
+
+.section-heading p {
+  font-size: 18px;
+
+  max-width: 650px;
+
+  line-height: 1.6;
+}
+
+
+/* QUESTIONS */
+
+.question {
+  border-top: 2px solid var(--black);
+
+  padding: 35px 0;
+
+  display: grid;
+
+  grid-template-columns: 90px 1fr;
+}
+
+.question-number {
+  font-family: monospace;
+
+  font-weight: 900;
+
+  color: var(--gray);
+}
+
+.question-content h3 {
+  font-family: monospace;
+
+  font-size: 20px;
+
+  margin-bottom: 25px;
+}
+
+.options {
+  display: flex;
+  flex-wrap: wrap;
+
+  gap: 10px;
+}
+
+.option {
+  background: transparent;
+
+  border: 2px solid var(--black);
+
+  padding: 13px 18px;
+
+  font-family: monospace;
+
+  font-weight: 800;
+
+  cursor: pointer;
+
+  transition: 0.15s;
+}
+
+.option:hover {
+  background: var(--white);
+
+  transform: translate(-2px, -2px);
+}
+
+.option.selected {
+  background: var(--yellow);
+
+  box-shadow: 4px 4px 0 var(--black);
+}
+
+.mood-grid {
+  display: grid;
+
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.mood-grid .option {
+  min-height: 70px;
+}
+
+.surprise {
+  grid-column: span 3;
+}
+
+
+/* MAIN BUTTON */
+
+.recommend-button {
+  width: 100%;
+
+  margin-top: 50px;
+
+  border: 2px solid var(--black);
+
+  padding: 25px 30px;
+
+  background: var(--yellow);
+
+  font-family: monospace;
+
+  font-size: 22px;
+
+  font-weight: 900;
+
+  display: flex;
+  justify-content: space-between;
+
+  cursor: pointer;
+
+  box-shadow: 8px 8px 0 var(--black);
+
+  transition: 0.15s;
+}
+
+.recommend-button:hover {
+  transform: translate(4px, 4px);
+
+  box-shadow: 4px 4px 0 var(--black);
+}
+
+
+
+/* Estado inicial y rango de años: mismos bordes y acentos del recomendador. */
+.filter-hint { font-family: monospace; line-height: 1.5; margin: 12px 0; }
+.filter-hint:empty { display: none; }
+.custom-years { display: flex; flex-wrap: wrap; gap: 16px; margin-top: 24px; }
+.custom-years[hidden] { display: none; }
+.custom-years label { display: grid; gap: 8px; flex: 1 1 130px; font-family: monospace; font-weight: bold; }
+.custom-years input { width: 100%; min-width: 0; padding: 12px; border: 2px solid var(--black); background: var(--background); color: var(--black); font: inherit; }
+.custom-years input[aria-invalid="true"] { border-style: dashed; }
+.recommend-button:disabled { color: var(--black); cursor: not-allowed; opacity: 1; background: var(--background); box-shadow: 4px 4px 0 var(--black); transform: none; }
+.recommend-button[aria-busy="true"] { cursor: wait; }

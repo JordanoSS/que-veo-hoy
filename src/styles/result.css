@@ -1,0 +1,118 @@
+/* Resultado: la misma paleta, bordes y tipografía del prototipo. */
+.result {
+  margin-top: 80px;
+  padding: 40px;
+  border: 2px solid var(--black);
+  background: var(--black);
+  color: var(--white);
+  scroll-margin-top: 24px;
+}
+
+.result-card {
+  display: grid;
+  grid-template-columns: minmax(0, 280px) minmax(0, 1fr);
+  align-items: start;
+  gap: 32px;
+}
+
+.result-poster,
+.poster-fallback {
+  display: block;
+  width: 100%;
+  max-width: 280px;
+  aspect-ratio: 2 / 3;
+  height: auto;
+  object-fit: cover;
+  border: 2px solid var(--yellow);
+}
+
+.poster-fallback {
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  font-family: monospace;
+}
+
+.result-content { min-width: 0; }
+
+.result-label,
+.result-reason-heading {
+  color: var(--yellow);
+  font-family: monospace;
+  font-weight: 800;
+  font-size: 13px;
+}
+
+.result h2 {
+  margin: 15px 0 20px;
+  font-size: clamp(28px, 3.4vw, 48px);
+  line-height: 1.05;
+  letter-spacing: -1px;
+  overflow-wrap: anywhere;
+}
+
+.result p { line-height: 1.65; }
+.result-meta, .result-genres { font-family: monospace; }
+.result-meta { color: var(--yellow); font-weight: 700; }
+.result-genres { margin-top: 8px; }
+.result-overview, .provider-note { margin-top: 24px; }
+
+.result-reason {
+  margin: 28px 0;
+  padding: 20px 0;
+  border-top: 2px solid var(--yellow);
+  border-bottom: 2px solid var(--yellow);
+}
+.result-reason-heading { margin-bottom: 10px; }
+
+.provider-list {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 12px 0;
+}
+.provider-list li {
+  border: 1px solid var(--white);
+  padding: 6px 8px;
+  font: 12px monospace;
+}
+.provider-link { color: var(--yellow); line-height: 1.6; }
+.result-content { overflow-wrap: anywhere; }
+
+.result-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-top: 28px;
+}
+.result-button {
+  background: var(--yellow);
+  color: var(--black);
+  border: 2px solid var(--black);
+  box-shadow: 4px 4px 0 var(--white);
+  padding: 14px 16px;
+  font: 800 14px monospace;
+  min-height: 48px;
+  cursor: pointer;
+  transition: transform 0.15s, box-shadow 0.15s, background 0.15s;
+}
+.result-button:hover {
+  background: var(--white);
+  transform: translate(2px, 2px);
+  box-shadow: 2px 2px 0 var(--yellow);
+}
+.result > .result-button { margin-top: 24px; }
+.result :focus-visible { outline-color: var(--yellow); }
+.share-status { margin-top: 20px; }
+.share-status:empty { display: none; }
+.share-status textarea {
+  width: 100%;
+  min-height: 180px;
+  padding: 12px;
+  margin-top: 12px;
+  border: 2px solid var(--yellow);
+  background: var(--white);
+  color: var(--black);
+  font-family: monospace;
+}

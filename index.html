@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  >
+
+  <meta
+    name="description"
+    content="Encuentra una película o serie según tu plataforma, tiempo disponible y estado de ánimo."
+  >
+
+  <title>¿Qué veo hoy?</title>
+  <link rel="icon" type="image/svg+xml" href="/assets/favicon.svg">
+  <link rel="stylesheet" href="/src/styles/main.css">
+
+  <!-- Reemplazar example.com por el dominio definitivo antes de publicar. -->
+  <link rel="canonical" href="https://example.com/">
+  <meta property="og:type" content="website">
+  <meta property="og:locale" content="es_EC">
+  <meta property="og:title" content="¿Qué veo hoy?">
+  <meta property="og:description" content="Encuentra una película o serie según tu plataforma, tiempo y estado de ánimo.">
+  <meta property="og:url" content="https://example.com/">
+  <meta property="og:image" content="https://example.com/assets/social-card.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="¿Qué veo hoy?">
+  <meta name="twitter:description" content="Deja de buscar. Empieza a ver.">
+  <meta name="twitter:image" content="https://example.com/assets/social-card.png">
+</head>
+
+<body>
+
+  <!-- HEADER -->
+  <header class="header">
+
+    <a href="#" class="brand">
+      <span class="brand-box">QVH</span>
+      <span>¿Qué veo hoy?</span>
+    </a>
+
+    <nav class="nav" aria-label="Navegación principal">
+      <a href="#recomendador">Recomendador</a>
+      <a href="#recomendador" data-type="movie">Películas</a>
+      <a href="#recomendador" data-type="tv">Series</a>
+    </nav>
+
+  </header>
+
+
+  <!-- HERO -->
+  <main>
+
+    <section class="hero">
+
+      <div class="hero-content">
+
+        <span class="eyebrow">
+          // DECIDIMOS POR TI
+        </span>
+
+        <h1>
+          DEJA DE BUSCAR.<br>
+          <span>EMPIEZA A VER.</span>
+        </h1>
+
+        <p>
+          Dinos qué plataformas tienes, cuánto tiempo
+          dispones y qué te apetece. Nosotros elegimos
+          algo para ti.
+        </p>
+
+        <a href="#recomendador" class="primary-button">
+          ENCONTRAR ALGO
+          <span>→</span>
+        </a>
+
+      </div>
+
+
+      <div class="hero-card">
+
+        <div class="card-tag">
+          ESTA NOCHE
+        </div>
+
+        <div class="poster-placeholder">
+          <span>?</span>
+        </div>
+
+        <div class="hero-card-footer">
+
+          <div>
+            <small>NO SABES QUÉ VER</small>
+            <strong>Eso lo resolvemos.</strong>
+          </div>
+
+          <span class="arrow">↗</span>
+
+        </div>
+
+      </div>
+
+    </section>
+
+
+
+    <!-- RECOMENDADOR -->
+
+    <section
+      class="recommender"
+      id="recomendador"
+    >
+
+      <div class="section-heading">
+
+        <span>01 / RECOMENDADOR</span>
+
+        <h2>
+          ¿QUÉ TE APETECE HOY?
+        </h2>
+
+        <p>
+          No necesitas saber el nombre de una película.
+          Solo dinos cómo quieres pasar el rato.
+        </p>
+
+      </div>
+
+
+      <!-- PASO 1 -->
+
+      <div class="question">
+
+        <div class="question-number">
+          01
+        </div>
+
+        <div class="question-content">
+
+          <h3>
+            ¿DÓNDE PUEDES VER ALGO?
+          </h3>
+
+          <div
+            class="options"
+            data-group="platform"
+          >
+
+            <button
+              class="option"
+              data-value="netflix"
+            >
+              NETFLIX
+            </button>
+
+            <button
+              class="option"
+              data-value="disney"
+            >
+              DISNEY+
+            </button>
+
+            <button
+              class="option"
+              data-value="max"
+            >
+              MAX
+            </button>
+
+            <button
+              class="option"
+              data-value="prime"
+            >
+              PRIME VIDEO
+            </button>
+
+            <button
+              class="option selected"
+              data-value="any"
+            >
+              ME DA IGUAL
+            </button>
+
+          </div>
+
+        </div>
+
+      </div>
+
+
+
+      <!-- PASO 2 -->
+
+      <div class="question">
+
+        <div class="question-number">
+          02
+        </div>
+
+        <div class="question-content">
+
+          <h3>
+            ¿QUÉ QUIERES VER?
+          </h3>
+
+          <div
+            class="options"
+            data-group="type"
+          >
+
+            <button
+              class="option"
+              data-value="movie"
+            >
+              PELÍCULA
+            </button>
+
+            <button
+              class="option"
+              data-value="tv"
+            >
+              SERIE
+            </button>
+
+            <button
+              class="option selected"
+              data-value="any"
+            >
+              ME DA IGUAL
+            </button>
+
+          </div>
+
+        </div>
+
+      </div>
+
+
+
+      <!-- PASO 3 -->
+
+      <div class="question">
+
+        <div class="question-number">
+          03
+        </div>
+
+        <div class="question-content">
+
+          <h3>
+            ¿QUÉ MOOD TIENES?
+          </h3>
+
+          <p id="moodHint" class="filter-hint" role="status">Elige un mood para activar DIME QUÉ VER.</p>
+          <div
+            class="options mood-grid"
+            data-group="mood"
+          >
+
+            <button
+              class="option"
+              data-value="funny"
+            >
+              😂 REÍRME
+            </button>
+
+            <button
+              class="option"
+              data-value="horror"
+            >
+              😨 PASAR MIEDO
+            </button>
+
+            <button
+              class="option"
+              data-value="think"
+            >
+              🧠 ALGO QUE ME HAGA PENSAR
+            </button>
+
+            <button
+              class="option"
+              data-value="romance"
+            >
+              ❤️ ROMANCE
+            </button>
+
+            <button
+              class="option"
+              data-value="action"
+            >
+              💥 ACCIÓN
+            </button>
+
+            <button
+              class="option"
+              data-value="relax"
+            >
+              😌 ALGO TRANQUILO
+            </button>
+
+            <button
+              class="option surprise"
+              data-value="random"
+            >
+              🎲 SORPRÉNDEME
+            </button>
+
+          </div>
+
+        </div>
+
+      </div>
+
+
+
+      <!-- PASO 4 -->
+
+      <div class="question">
+
+        <div class="question-number">
+          04
+        </div>
+
+        <div class="question-content">
+
+          <h3>
+            ¿CUÁNTO TIEMPO TIENES?
+          </h3>
+
+          <p class="filter-hint">Para series, el tiempo se aplica a cada episodio.</p>
+          <div
+            class="options"
+            data-group="time"
+          >
+
+            <button
+              class="option"
+              data-value="30"
+            >
+              &lt; 30 MIN
+            </button>
+
+            <button
+              class="option"
+              data-value="60"
+            >
+              &lt; 1 HORA
+            </button>
+
+            <button
+              class="option"
+              data-value="120"
+            >
+              &lt; 2 HORAS
+            </button>
+
+            <button
+              class="option selected"
+              data-value="any"
+            >
+              SIN LÍMITE
+            </button>
+
+          </div>
+
+        </div>
+
+      </div>
+
+
+      <!-- PASO 5 -->
+      <div class="question">
+        <div class="question-number">05</div>
+        <div class="question-content">
+          <h3>¿DE QUÉ ÉPOCA QUIERES VER ALGO?</h3>
+          <div class="options" data-group="yearPreset">
+            <button class="option selected" data-value="any">CUALQUIER AÑO</button>
+            <button class="option" data-value="2020">2020 - ACTUALIDAD</button>
+            <button class="option" data-value="2010">2010 - 2019</button>
+            <button class="option" data-value="2000">2000 - 2009</button>
+            <button class="option" data-value="1990">1990 - 1999</button>
+            <button class="option" data-value="custom">PERSONALIZAR</button>
+          </div>
+          <div id="customYears" class="custom-years" hidden>
+            <label for="yearFrom">DESDE <input id="yearFrom" type="number" min="1900" step="1" inputmode="numeric" aria-describedby="yearError" disabled></label>
+            <label for="yearTo">HASTA <input id="yearTo" type="number" min="1900" step="1" inputmode="numeric" aria-describedby="yearError" disabled></label>
+          </div>
+          <p id="yearError" class="filter-hint" role="status"></p>
+        </div>
+      </div>
+
+      <button
+        id="recommendButton"
+        type="button"
+        disabled
+        aria-describedby="moodHint yearError"
+        class="recommend-button"
+      >
+        DIME QUÉ VER
+        <span>→</span>
+      </button>
+
+
+      <section id="result" class="result hidden" aria-label="Recomendación" aria-live="polite" aria-atomic="true" tabindex="-1"></section>
+      <noscript><p>Activa JavaScript para obtener recomendaciones.</p></noscript>
+
+    </section>
+
+  </main>
+
+
+  <footer>
+
+    <strong>QVH.</strong>
+
+    <span>
+      ¿Qué veo hoy? · 2026
+    </span>
+
+    <div class="credits">
+      <a href="https://www.themoviedb.org/" target="_blank" rel="noopener noreferrer" aria-label="TMDB">
+        <img src="/assets/tmdb.svg" alt="TMDB" width="80" height="32" loading="lazy">
+      </a>
+      <p>This product uses the TMDB API but is not endorsed or certified by TMDB.</p>
+      <p>Disponibilidad de streaming: datos de <a href="https://www.justwatch.com/" target="_blank" rel="noopener noreferrer">JustWatch</a> mediante TMDB.</p>
+    </div>
+  </footer>
+
+
+  <script type="module" src="/src/main.js"></script>
+
+</body>
+</html>

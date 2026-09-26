@@ -1,0 +1,7 @@
+/* Entrada CSS externa para Vite. Mantener este orden de la cascada. */
+@import "./variables.css";
+@import "./base.css";
+@import "./layout.css";
+@import "./recommender.css";
+@import "./result.css";
+@import "./responsive.css";

@@ -1,0 +1,102 @@
+/* MOBILE */
+
+@media (max-width: 850px) {
+
+  .nav {
+    display: none;
+  }
+
+  .hero {
+    grid-template-columns: 1fr;
+
+    padding: 60px 6%;
+
+    gap: 60px;
+  }
+
+  .hero h1 {
+    letter-spacing: -3px;
+  }
+
+  .hero-card {
+    max-width: 480px;
+
+    margin: auto;
+  }
+
+  .question {
+    grid-template-columns: 1fr;
+
+    gap: 15px;
+  }
+
+  .mood-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .surprise {
+    grid-column: span 2;
+  }
+
+}
+
+
+@media (max-width: 520px) {
+
+  .header {
+    padding: 0 4%;
+  }
+
+  .hero {
+    padding-left: 5%;
+    padding-right: 5%;
+  }
+
+  .mood-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .surprise {
+    grid-column: auto;
+  }
+
+  .option {
+    flex: 1 1 auto;
+  }
+
+  .recommender {
+    padding-left: 5%;
+    padding-right: 5%;
+  }
+
+}
+/* Restricciones locales: conservan las proporciones y evitan overflow. */
+.hero { grid-template-columns: minmax(0, 1.2fr) minmax(0, 0.8fr); }
+.hero-content, .hero-card, .question-content { min-width: 0; }
+.hero h1 { overflow-wrap: anywhere; }
+.primary-button { min-width: min(270px, 100%); max-width: 100%; }
+.question-number { color: #716b60; }
+.option { min-height: 46px; }
+@media (max-width: 850px) {
+  .hero { grid-template-columns: minmax(0, 1fr); }
+}
+@media (min-width: 601px) and (max-width: 850px) {
+  .result { padding: 28px; }
+  .result-card { grid-template-columns: minmax(0, 200px) minmax(0, 1fr); gap: 24px; }
+}
+@media (max-width: 600px) {
+  .result { padding: 24px 18px; }
+  .result-card { grid-template-columns: minmax(0, 1fr); }
+  .result-poster, .poster-fallback { max-width: 240px; justify-self: center; }
+}
+@media (max-width: 520px) {
+  .hero h1 { font-size: clamp(42px, 11vw, 57px); letter-spacing: -2px; }
+  .hero-card { width: calc(100% - 16px); }
+  .section-heading h2 { font-size: clamp(36px, 10vw, 50px); letter-spacing: -2px; }
+  .recommend-button { padding: 22px 18px; font-size: 19px; }
+  .result-actions .result-button { flex: 1 1 auto; }
+}
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}

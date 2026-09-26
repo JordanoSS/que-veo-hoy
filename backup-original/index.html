@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  >
+
+  <meta
+    name="description"
+    content="Encuentra una película o serie según tu plataforma, tiempo disponible y estado de ánimo."
+  >
+
+  <title>¿Qué veo hoy?</title>
+
+  <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+  <!-- HEADER -->
+  <header class="header">
+
+    <a href="#" class="brand">
+      <span class="brand-box">QVH</span>
+      <span>¿Qué veo hoy?</span>
+    </a>
+
+    <nav class="nav">
+      <a href="#recomendador">Recomendador</a>
+      <a href="#">Películas</a>
+      <a href="#">Series</a>
+    </nav>
+
+  </header>
+
+
+  <!-- HERO -->
+  <main>
+
+    <section class="hero">
+
+      <div class="hero-content">
+
+        <span class="eyebrow">
+          // DECIDIMOS POR TI
+        </span>
+
+        <h1>
+          DEJA DE BUSCAR.<br>
+          <span>EMPIEZA A VER.</span>
+        </h1>
+
+        <p>
+          Dinos qué plataformas tienes, cuánto tiempo
+          dispones y qué te apetece. Nosotros elegimos
+          algo para ti.
+        </p>
+
+        <a href="#recomendador" class="primary-button">
+          ENCONTRAR ALGO
+          <span>→</span>
+        </a>
+
+      </div>
+
+
+      <div class="hero-card">
+
+        <div class="card-tag">
+          ESTA NOCHE
+        </div>
+
+        <div class="poster-placeholder">
+          <span>?</span>
+        </div>
+
+        <div class="hero-card-footer">
+
+          <div>
+            <small>NO SABES QUÉ VER</small>
+            <strong>Eso lo resolvemos.</strong>
+          </div>
+
+          <span class="arrow">↗</span>
+
+        </div>
+
+      </div>
+
+    </section>
+
+
+
+    <!-- RECOMENDADOR -->
+
+    <section
+      class="recommender"
+      id="recomendador"
+    >
+
+      <div class="section-heading">
+
+        <span>01 / RECOMENDADOR</span>
+
+        <h2>
+          ¿QUÉ TE APETECE HOY?
+        </h2>
+
+        <p>
+          No necesitas saber el nombre de una película.
+          Solo dinos cómo quieres pasar el rato.
+        </p>
+
+      </div>
+
+
+      <!-- PASO 1 -->
+
+      <div class="question">
+
+        <div class="question-number">
+          01
+        </div>
+
+        <div class="question-content">
+
+          <h3>
+            ¿DÓNDE PUEDES VER ALGO?
+          </h3>
+
+          <div
+            class="options"
+            data-group="platform"
+          >
+
+            <button
+              class="option"
+              data-value="netflix"
+            >
+              NETFLIX
+            </button>
+
+            <button
+              class="option"
+              data-value="disney"
+            >
+              DISNEY+
+            </button>
+
+            <button
+              class="option"
+              data-value="max"
+            >
+              MAX
+            </button>
+
+            <button
+              class="option"
+              data-value="prime"
+            >
+              PRIME VIDEO
+            </button>
+
+            <button
+              class="option selected"
+              data-value="any"
+            >
+              ME DA IGUAL
+            </button>
+
+          </div>
+
+        </div>
+
+      </div>
+
+
+
+      <!-- PASO 2 -->
+
+      <div class="question">
+
+        <div class="question-number">
+          02
+        </div>
+
+        <div class="question-content">
+
+          <h3>
+            ¿QUÉ QUIERES VER?
+          </h3>
+
+          <div
+            class="options"
+            data-group="type"
+          >
+
+            <button
+              class="option"
+              data-value="movie"
+            >
+              PELÍCULA
+            </button>
+
+            <button
+              class="option"
+              data-value="series"
+            >
+              SERIE
+            </button>
+
+            <button
+              class="option selected"
+              data-value="any"
+            >
+              ME DA IGUAL
+            </button>
+
+          </div>
+
+        </div>
+
+      </div>
+
+
+
+      <!-- PASO 3 -->
+
+      <div class="question">
+
+        <div class="question-number">
+          03
+        </div>
+
+        <div class="question-content">
+
+          <h3>
+            ¿QUÉ MOOD TIENES?
+          </h3>
+
+          <div
+            class="options mood-grid"
+            data-group="mood"
+          >
+
+            <button
+              class="option"
+              data-value="funny"
+            >
+              😂 REÍRME
+            </button>
+
+            <button
+              class="option"
+              data-value="horror"
+            >
+              😨 PASAR MIEDO
+            </button>
+
+            <button
+              class="option"
+              data-value="think"
+            >
+              🧠 ALGO QUE ME HAGA PENSAR
+            </button>
+
+            <button
+              class="option"
+              data-value="romance"
+            >
+              ❤️ ROMANCE
+            </button>
+
+            <button
+              class="option"
+              data-value="action"
+            >
+              💥 ACCIÓN
+            </button>
+
+            <button
+              class="option"
+              data-value="relax"
+            >
+              😌 ALGO TRANQUILO
+            </button>
+
+            <button
+              class="option surprise selected"
+              data-value="random"
+            >
+              🎲 SORPRÉNDEME
+            </button>
+
+          </div>
+
+        </div>
+
+      </div>
+
+
+
+      <!-- PASO 4 -->
+
+      <div class="question">
+
+        <div class="question-number">
+          04
+        </div>
+
+        <div class="question-content">
+
+          <h3>
+            ¿CUÁNTO TIEMPO TIENES?
+          </h3>
+
+          <div
+            class="options"
+            data-group="time"
+          >
+
+            <button
+              class="option"
+              data-value="30"
+            >
+              &lt; 30 MIN
+            </button>
+
+            <button
+              class="option"
+              data-value="60"
+            >
+              &lt; 1 HORA
+            </button>
+
+            <button
+              class="option"
+              data-value="120"
+            >
+              &lt; 2 HORAS
+            </button>
+
+            <button
+              class="option selected"
+              data-value="any"
+            >
+              SIN LÍMITE
+            </button>
+
+          </div>
+
+        </div>
+
+      </div>
+
+
+      <button
+        id="recommendButton"
+        class="recommend-button"
+      >
+        DIME QUÉ VER
+        <span>→</span>
+      </button>
+
+
+      <!-- RESULTADO TEMPORAL -->
+
+      <section
+        id="result"
+        class="result hidden"
+      >
+
+        <span class="result-label">
+          TU ELECCIÓN
+        </span>
+
+        <h2>
+          LISTO.
+        </h2>
+
+        <p>
+          El cuestionario funciona correctamente.
+          En la siguiente etapa conectaremos películas
+          y series reales.
+        </p>
+
+        <div id="selectionSummary"></div>
+
+      </section>
+
+    </section>
+
+  </main>
+
+
+  <footer>
+
+    <strong>QVH.</strong>
+
+    <span>
+      ¿Qué veo hoy? · 2026
+    </span>
+
+  </footer>
+
+
+  <script src="app.js"></script>
+
+</body>
+</html>

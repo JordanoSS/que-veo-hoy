@@ -1,0 +1,86 @@
+- generic [active] [ref=e1]:
+  - banner [ref=e2]:
+    - link "QVH ¿Qué veo hoy?" [ref=e3] [cursor=pointer]:
+      - /url: "#"
+    - navigation "Navegación principal" [ref=e4]:
+      - link "Recomendador" [ref=e5] [cursor=pointer]:
+        - /url: "#recomendador"
+      - link "Películas" [ref=e6] [cursor=pointer]:
+        - /url: "#recomendador"
+      - link "Series" [ref=e7] [cursor=pointer]:
+        - /url: "#recomendador"
+  - main [ref=e8]:
+    - generic [ref=e9]:
+      - generic [ref=e10]:
+        - text: // DECIDIMOS POR TI
+        - heading "DEJA DE BUSCAR. EMPIEZA A VER." [level=1] [ref=e11]
+        - paragraph [ref=e12]: Dinos qué plataformas tienes, cuánto tiempo dispones y qué te apetece. Nosotros elegimos algo para ti.
+        - link "ENCONTRAR ALGO →" [ref=e13] [cursor=pointer]:
+          - /url: "#recomendador"
+      - generic [ref=e14]:
+        - generic [ref=e15]: ESTA NOCHE
+        - generic [ref=e16]: "?"
+        - generic [ref=e17]:
+          - generic [ref=e18]:
+            - text: NO SABES QUÉ VER
+            - strong [ref=e19]: Eso lo resolvemos.
+          - text: ↗
+    - generic [ref=e20]:
+      - generic [ref=e21]:
+        - text: 01 / RECOMENDADOR
+        - heading "¿QUÉ TE APETECE HOY?" [level=2] [ref=e22]
+        - paragraph [ref=e23]: No necesitas saber el nombre de una película. Solo dinos cómo quieres pasar el rato.
+      - generic [ref=e24]:
+        - generic [ref=e25]: "01"
+        - generic [ref=e26]:
+          - heading "¿DÓNDE PUEDES VER ALGO?" [level=3] [ref=e27]
+          - group "¿DÓNDE PUEDES VER ALGO?" [ref=e28]:
+            - button "NETFLIX" [ref=e29]
+            - button "DISNEY+" [ref=e30]
+            - button "MAX" [ref=e31]
+            - button "PRIME VIDEO" [ref=e32]
+            - button "ME DA IGUAL" [pressed] [ref=e33]
+      - generic [ref=e34]:
+        - generic [ref=e35]: "02"
+        - generic [ref=e36]:
+          - heading "¿QUÉ QUIERES VER?" [level=3] [ref=e37]
+          - group "¿QUÉ QUIERES VER?" [ref=e38]:
+            - button "PELÍCULA" [ref=e39]
+            - button "SERIE" [ref=e40]
+            - button "ME DA IGUAL" [pressed] [ref=e41]
+      - generic [ref=e42]:
+        - generic [ref=e43]: "03"
+        - generic [ref=e44]:
+          - heading "¿QUÉ MOOD TIENES?" [level=3] [ref=e45]
+          - group "¿QUÉ MOOD TIENES?" [ref=e46]:
+            - button "😂 REÍRME" [ref=e47]
+            - button "😨 PASAR MIEDO" [ref=e48]
+            - button "🧠 ALGO QUE ME HAGA PENSAR" [ref=e49]
+            - button "❤️ ROMANCE" [ref=e50]
+            - button "💥 ACCIÓN" [ref=e51]
+            - button "😌 ALGO TRANQUILO" [ref=e52]
+            - button "🎲 SORPRÉNDEME" [pressed] [ref=e53]
+      - generic [ref=e54]:
+        - generic [ref=e55]: "04"
+        - generic [ref=e56]:
+          - heading "¿CUÁNTO TIEMPO TIENES?" [level=3] [ref=e57]
+          - group "¿CUÁNTO TIEMPO TIENES?" [ref=e58]:
+            - button "< 30 MIN" [ref=e59]
+            - button "< 1 HORA" [ref=e60]
+            - button "< 2 HORAS" [ref=e61]
+            - button "SIN LÍMITE" [pressed] [ref=e62]
+      - button "DIME QUÉ VER →" [ref=e63]
+      - region "Recomendación"
+  - contentinfo [ref=e64]:
+    - strong [ref=e65]: QVH.
+    - text: ¿Qué veo hoy? · 2026
+    - generic [ref=e66]:
+      - link "TMDB" [ref=e67] [cursor=pointer]:
+        - /url: https://www.themoviedb.org/
+        - img "TMDB" [ref=e68]
+      - paragraph [ref=e69]: This product uses the TMDB API but is not endorsed or certified by TMDB.
+      - paragraph [ref=e70]:
+        - text: "Disponibilidad de streaming: datos de"
+        - link "JustWatch" [ref=e71] [cursor=pointer]:
+          - /url: https://www.justwatch.com/
+        - text: mediante TMDB.

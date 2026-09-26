@@ -1,0 +1,86 @@
+- generic [active] [ref=e1]:
+  - banner [ref=e2]:
+    - link "QVH ¿Qué veo hoy?" [ref=e3] [cursor=pointer]:
+      - /url: "#"
+      - generic [ref=e4]: QVH
+      - generic [ref=e5]: ¿Qué veo hoy?
+  - main [ref=e6]:
+    - generic [ref=e7]:
+      - generic [ref=e8]:
+        - generic [ref=e9]: // DECIDIMOS POR TI
+        - heading "DEJA DE BUSCAR. EMPIEZA A VER." [level=1] [ref=e10]:
+          - text: DEJA DE BUSCAR.
+          - generic [ref=e11]: EMPIEZA A VER.
+        - paragraph [ref=e12]: Dinos qué plataformas tienes, cuánto tiempo dispones y qué te apetece. Nosotros elegimos algo para ti.
+        - link "ENCONTRAR ALGO →" [ref=e13] [cursor=pointer]:
+          - /url: "#recomendador"
+          - text: ENCONTRAR ALGO
+          - generic [ref=e14]: →
+      - generic [ref=e15]:
+        - generic [ref=e16]: ESTA NOCHE
+        - generic [ref=e17]: "?"
+        - generic [ref=e19]:
+          - generic [ref=e20]:
+            - generic [ref=e21]: NO SABES QUÉ VER
+            - strong [ref=e22]: Eso lo resolvemos.
+          - generic [ref=e23]: ↗
+    - generic [ref=e24]:
+      - generic [ref=e25]:
+        - text: 01 / RECOMENDADOR
+        - heading "¿QUÉ TE APETECE HOY?" [level=2] [ref=e26]
+        - paragraph [ref=e27]: No necesitas saber el nombre de una película. Solo dinos cómo quieres pasar el rato.
+      - generic [ref=e28]:
+        - generic [ref=e29]: "01"
+        - generic [ref=e30]:
+          - heading "¿DÓNDE PUEDES VER ALGO?" [level=3] [ref=e31]
+          - group "¿DÓNDE PUEDES VER ALGO?" [ref=e32]:
+            - button "NETFLIX" [ref=e33] [cursor=pointer]
+            - button "DISNEY+" [ref=e34] [cursor=pointer]
+            - button "MAX" [ref=e35] [cursor=pointer]
+            - button "PRIME VIDEO" [ref=e36] [cursor=pointer]
+            - button "ME DA IGUAL" [pressed] [ref=e37] [cursor=pointer]
+      - generic [ref=e38]:
+        - generic [ref=e39]: "02"
+        - generic [ref=e40]:
+          - heading "¿QUÉ QUIERES VER?" [level=3] [ref=e41]
+          - group "¿QUÉ QUIERES VER?" [ref=e42]:
+            - button "PELÍCULA" [ref=e43] [cursor=pointer]
+            - button "SERIE" [ref=e44] [cursor=pointer]
+            - button "ME DA IGUAL" [pressed] [ref=e45] [cursor=pointer]
+      - generic [ref=e46]:
+        - generic [ref=e47]: "03"
+        - generic [ref=e48]:
+          - heading "¿QUÉ MOOD TIENES?" [level=3] [ref=e49]
+          - group "¿QUÉ MOOD TIENES?" [ref=e50]:
+            - button "😂 REÍRME" [ref=e51] [cursor=pointer]
+            - button "😨 PASAR MIEDO" [ref=e52] [cursor=pointer]
+            - button "🧠 ALGO QUE ME HAGA PENSAR" [ref=e53] [cursor=pointer]
+            - button "❤️ ROMANCE" [ref=e54] [cursor=pointer]
+            - button "💥 ACCIÓN" [ref=e55] [cursor=pointer]
+            - button "😌 ALGO TRANQUILO" [ref=e56] [cursor=pointer]
+            - button "🎲 SORPRÉNDEME" [pressed] [ref=e57] [cursor=pointer]
+      - generic [ref=e58]:
+        - generic [ref=e59]: "04"
+        - generic [ref=e60]:
+          - heading "¿CUÁNTO TIEMPO TIENES?" [level=3] [ref=e61]
+          - group "¿CUÁNTO TIEMPO TIENES?" [ref=e62]:
+            - button "< 30 MIN" [ref=e63] [cursor=pointer]
+            - button "< 1 HORA" [ref=e64] [cursor=pointer]
+            - button "< 2 HORAS" [ref=e65] [cursor=pointer]
+            - button "SIN LÍMITE" [pressed] [ref=e66] [cursor=pointer]
+      - button "DIME QUÉ VER →" [ref=e67] [cursor=pointer]:
+        - text: DIME QUÉ VER
+        - generic [ref=e68]: →
+  - contentinfo [ref=e69]:
+    - strong [ref=e70]: QVH.
+    - generic [ref=e71]: ¿Qué veo hoy? · 2026
+    - generic [ref=e72]:
+      - link "TMDB" [ref=e73] [cursor=pointer]:
+        - /url: https://www.themoviedb.org/
+        - img "TMDB" [ref=e74]
+      - paragraph [ref=e75]: This product uses the TMDB API but is not endorsed or certified by TMDB.
+      - paragraph [ref=e76]:
+        - text: "Disponibilidad de streaming: datos de"
+        - link "JustWatch" [ref=e77] [cursor=pointer]:
+          - /url: https://www.justwatch.com/
+        - text: mediante TMDB.
