@@ -1,135 +1,126 @@
 # ¿Qué veo hoy?
 
-Recomendador de películas y series en español según plataforma, tipo, estado de ánimo y tiempo. Conserva el diseño crema, negro y amarillo del prototipo y su animación glitch. La región inicial es Ecuador (`EC`).
+Recomendador en español con Vite y JavaScript, alojado en **Cloudflare Pages** con **Pages Functions**. Conserva la interfaz crema, negro y amarillo, los filtros, el historial y la región inicial Ecuador (`EC`).
 
-## Stack y estructura
-
-HTML5, CSS moderno, JavaScript con ES Modules, Vite y funciones Node compatibles con Vercel. TMDB aporta catálogo, imágenes y disponibilidad regional mediante JustWatch. No se utiliza ningún framework de interfaz.
+## Estructura
 
 ```text
-index.html                 Página y cuestionario
-src/main.js                Entrada JavaScript del cliente
-src/styles/main.css        Entrada CSS externa cargada por index.html
-src/styles/                Variables, base, layout, cuestionario, resultado, responsive
-src/components/            Cuestionario, tarjeta, loading y error/empty
-src/config/                Moods/géneros y plataformas/regiones
-src/services/movies.js     Cliente de nuestras rutas API y caché de sesión
-src/utils/                 Almacenamiento, aleatoriedad y formato
-api/                       discover.js, details.js, providers.js
-api/_lib/tmdb.js            Validación, acceso privado a TMDB y respuestas
-public/assets/             Logo de atribución y tarjeta social
-tests/                    Pruebas Node sin llamadas externas
-backup-original/           Respaldo inmutable del prototipo
+index.html                  Página y cuestionario
+src/                        Frontend, estilos, reglas y servicios
+public/                     Assets y _headers de Cloudflare
+functions/api/discover.js    /api/discover
+functions/api/details.js     /api/details
+functions/api/providers.js   /api/providers
+server/tmdb.js              Validación, cliente privado TMDB y respuestas
+wrangler.jsonc              Nombre, salida dist y fecha de compatibilidad
+vite.config.js              Vite y proxy local /api hacia Wrangler
+tests/                      Pruebas sin llamadas externas
+backup-original/            Respaldo inmutable: no modificar
 ```
 
-`app.js` y `style.css` de la raíz solo indican la ubicación de los módulos migrados. No se cargan. **No modificar `backup-original/`.**
+`functions/` está en la raíz, junto a `src/`, `public/` y `package.json`, **fuera de `dist/`**. Cloudflare compila las funciones por separado. Los helpers están en `server/` para no generar rutas públicas adicionales. No se requiere compatibilidad Node en el runtime.
 
-## Instalación y configuración
+## Desarrollo local
 
-Requiere Node.js 22.12 o posterior (se recomienda Node 22 LTS) y npm.
+Requiere Node.js 22.12 o posterior y npm.
 
-```sh
-npm install
-cp .env.example .env
-```
+1. Instalar dependencias:
+   ```sh
+   npm install
+   ```
+2. Crear el archivo privado local:
+   ```sh
+   cp .dev.vars.example .dev.vars
+   ```
+   Editar `.dev.vars` y completar `TMDB_BEARER_TOKEN` con el **API Read Access Token** de TMDB. No compartir el archivo ni subirlo a Git. `.dev.vars`, sus variantes, `.env`, `.env.*`, `.wrangler/`, `node_modules/` y `dist/` están ignorados. Las plantillas `.example` no contienen credenciales.
 
-Solicita en la configuración API de tu cuenta de TMDB un **API Read Access Token**. Escríbelo únicamente en `.env`:
+   Si vienes de la configuración anterior, copia únicamente el valor de `TMDB_BEARER_TOKEN` desde tu `.env` a `.dev.vars`. Wrangler da prioridad a `.dev.vars`; mantener una única fuente evita confusiones. Las funciones leen **`context.env.TMDB_BEARER_TOKEN`**, nunca `process.env` ni variables con prefijo `VITE_`.
+3. Compilar:
+   ```sh
+   npm run build
+   ```
+4. Iniciar Pages y sus funciones:
+   ```sh
+   npm run cf:dev
+   ```
+   Abre `http://localhost:8788`. Este script reconstruye `dist` antes de iniciar Wrangler; si ya compilaste, también puedes ejecutar `npx wrangler pages dev dist` directamente. No necesitas iniciar sesión en Cloudflare para desarrollo local. Reinicia Wrangler después de cambiar el secreto.
 
-```dotenv
-TMDB_BEARER_TOKEN=tu_token_de_lectura
-```
-
-No uses el prefijo `VITE_`, no lo incluyas en HTML/JS del cliente ni lo subas a Git. `.env` está ignorado. No se imprimen credenciales ni respuestas internas de errores.
+Para editar la interfaz con HMR, mantén Wrangler en el puerto 8788 y abre otra terminal:
 
 ```sh
 npm run dev
 ```
 
-Abre la URL indicada por Vite (normalmente `http://localhost:5173`). Un adaptador de desarrollo ejecuta los mismos handlers de `/api` dentro del servidor Node de Vite: **no necesitas otro servidor ni Vercel CLI para trabajar localmente**. Reinicia Vite después de editar `.env` o los handlers API.
+Vite sirve la interfaz en `http://localhost:5173` y envía `/api/*` al runtime real de Wrangler. El frontend conserva sus llamadas relativas `/api/discover`, `/api/details` y `/api/providers`. `npm run preview` previsualiza solo archivos estáticos: usa `cf:dev` para probar el sitio completo. Al editar frontend usando únicamente Wrangler, vuelve a compilar para actualizar `dist/`.
 
-Sin token, el proyecto compila y la interfaz funciona; las consultas devuelven `503 NOT_CONFIGURED` y muestran un error comprensible. No se simulan recomendaciones en producción.
+## Probar la API
 
-## API y criterios
+```sh
+curl -i 'http://localhost:8788/api/discover?type=movie&platform=any&mood=action&time=120&yearFrom=2015&yearTo=2026&region=EC'
+curl -i 'http://localhost:8788/api/details?type=movie&id=550&region=EC'
+curl -i 'http://localhost:8788/api/providers?type=movie&id=550&region=EC'
+```
 
-Solo se admite `GET`. Los parámetros desconocidos, duplicados o inválidos producen `400`; otros métodos, `405`.
+Ajusta los años al rango que quieras consultar, sin superar el año actual. Solo se admite `GET`; otro método devuelve `405` y `Allow: GET`. Parámetros desconocidos, duplicados o inválidos devuelven `400`.
 
-- `/api/discover?type=movie&platform=netflix&mood=funny&time=120&region=EC`
-- `/api/details?type=movie&id=550&region=EC`
-- `/api/providers?type=movie&id=550&region=EC`
+- Discover acepta `type`, `platform`, `mood`, `time`, `yearFrom`, `yearTo`, `region`. Mood es obligatorio; años opcionales, entre 1900 y el año actual, sin rango invertido.
+- Detalles/proveedores aceptan `type`, `id` y `region`. `tv` es el tipo público de series; se mantiene el alias `series` por compatibilidad.
+- Regiones: EC, MX, CO, AR, PE, CL, ES.
+- Éxito: `{ "ok": true, "data": ... }`.
+- Error: `{ "ok": false, "error": { "code": "...", "message": "..." } }`.
+- Sin secreto: `503 NOT_CONFIGURED`. Proveedor no disponible: `502`; límite externo: `429`; título ausente: `404`. No se devuelven stack traces.
 
-Descubrimiento acepta exclusivamente `type`, `platform`, `mood`, `time`, `region`. Detalles/proveedores aceptan `type` (`movie` o `series`), ID numérico positivo y región. Regiones previstas: EC, MX, CO, AR, PE, CL, ES.
+La migración conserva validación semántica de géneros, tipo y años; calidad mínima de 100 votos y puntuación 6; exclusión de adultos; y fallback de duración antes que plataforma, sin eliminar mood, tipo explícito ni años. Para TV, el tiempo corresponde al episodio. El catálogo TV no tiene Horror/Thriller: esa combinación devuelve vacío, sin sustituirla por misterio.
 
-Éxito: `{ "ok": true, "data": ... }`. Error: `{ "ok": false, "error": { "code": "...", "message": "..." } }`. Los fallos del proveedor generan `502`, el límite externo `429` y los títulos ausentes `404`. Solo se cachean éxitos (descubrimiento: 5 minutos en CDN; detalles/proveedores: 1 hora).
+Se mantienen las cabeceras de caché de éxitos y `no-store` en errores. Estas cabeceras no implican una caché persistente de Functions; no se ha añadido Cache API. Las cabeceras de seguridad anteriores se aplican mediante `public/_headers` a assets y desde los handlers a JSON.
 
-Se excluyen adultos y títulos sin póster, sinopsis o fecha; se exigen al menos 100 votos y puntuación 6/10. Se consultan hasta dos páginas por tipo para mantener un conjunto acotado de candidatos. Los géneros alternativos de cada mood se combinan con OR. `any` sortea el tipo y permite probar el otro si no encuentra una opción útil. No se relajan silenciosamente los filtros.
+## Cloudflare Pages con GitHub
 
-Los límites de tiempo son estrictos (`<30`, `<60`, `<120`). Para series se usa el mayor tiempo conocido de episodio; con filtro temporal se descartan duraciones desconocidas. Los detalles se verifican antes de presentar el resultado. Se prueban hasta diez candidatos por tipo para limitar tráfico.
+1. Subir este proyecto a un repositorio GitHub y conectarlo en **Workers & Pages → Create application → Pages → Connect to Git**.
+2. Configurar:
 
-Los IDs de plataformas se resuelven desde el catálogo regional; se distingue suscripción de alquiler/compra. El historial conserva 30 claves `tipo:id`, evita el resultado inmediato y prioriza títulos nuevos. Si se agota, reutiliza antiguos no vistos. “Ya la vi” excluye el título y busca otro. Región, vistos e historial se guardan localmente; si falla localStorage, funcionan en memoria durante la sesión.
+   | Ajuste | Valor |
+   |---|---|
+   | Build command | `npm run build` |
+   | Build output directory | `dist` |
+   | Root directory | `/` (raíz del repositorio) |
+   | Node.js | 22.12 o posterior |
 
-## Pruebas y build
+   El repositorio conectado debe contener `package.json` y `functions/` en su raíz. Si subes un monorepo, selecciona como raíz la carpeta de este proyecto.
+3. En **Workers & Pages → proyecto → Settings → Variables and Secrets**, añadir **`TMDB_BEARER_TOKEN` como Secret**. Configurarlo para **Production** y también **Preview** si vas a probar previews. No colocarlo en `wrangler.jsonc`, en el cliente ni bajo un nombre `VITE_`.
+4. Desplegar o volver a desplegar después de configurar el secreto. Comprobar `/api/discover` en el dominio `pages.dev` y luego, si corresponde, configurar el dominio propio.
+
+`wrangler.jsonc` solo fija el nombre `que-veo-hoy`, la carpeta `dist` y la fecha de compatibilidad. Cambia `name` si tu proyecto de Pages tiene otro nombre. No contiene IDs de cuenta ni secretos.
+
+## Desplegar con Wrangler como alternativa
+
+Desde la raíz de este proyecto:
+
+```sh
+npx wrangler login
+# Solo si el proyecto todavía no existe:
+npx wrangler pages project create que-veo-hoy --production-branch main
+# El comando solicita el valor de forma interactiva; no lo incluyas en la línea de comandos:
+npx wrangler pages secret put TMDB_BEARER_TOKEN --project-name que-veo-hoy
+npm run cf:deploy -- --branch main
+```
+
+`cf:deploy` ejecuta build y `wrangler pages deploy dist`; incluye Pages Functions automáticamente. Usa la rama de producción real en lugar de `main` si difiere. Otra rama crea un preview; configura también su secreto en el dashboard. Los secretos de `.dev.vars` **no se suben automáticamente**. Evita el arrastrar y soltar de `dist` en el dashboard para este proyecto: necesitas desplegar también las funciones.
+
+## Verificación
 
 ```sh
 npm test
 npm run build
-npm run preview
+bash .agents/skills/que-veo-hoy-maintainer/scripts/verify.sh
 ```
 
-Las pruebas usan `node:test`, datos controlados y fetch simulado; no requieren token. Cubren validación, exclusión de adultos/calidad, fallback de tipo, duración, proveedores, errores y almacenamiento bloqueado/dañado. El build genera `dist/`; preview también conecta el adaptador API local. `dist/` por sí solo requiere las funciones serverless para recomendar.
+Las pruebas usan `node:test` con `Request`, `Response` y `context.env` de prueba, sin necesitar credenciales ni red. Cubren contratos y errores de las tres rutas, token por contexto, filtros semánticos, años, fallback, estado visual, historial y ausencia de secretos en cliente/build. No se modificaron HTML, CSS, componentes ni lógica del recomendador durante esta migración.
 
-Comprobación manual:
+## Atribución y límites
 
-1. Elegir opciones con ratón, touch y teclado; comprobar foco y selección única.
-2. Solicitar una recomendación con token válido y revisar datos, explicación y región.
-3. Pulsar “Ver otra” y “Ya la vi”; recargar y comprobar la persistencia.
-4. Compartir desde HTTPS o localhost; comprobar copia y alternativa manual si falta permiso.
-5. Probar sin token, sin conexión, disponibilidad vacía y filtros sin coincidencias.
-6. Revisar 320, 375, 768, 1024 y 1440 px, sin scroll horizontal.
+TMDB aporta catálogo e imágenes; JustWatch, disponibilidad mediante TMDB. Se conserva la atribución visible: “This product uses the TMDB API but is not endorsed or certified by TMDB.” La disponibilidad regional y los metadatos pueden ser incompletos; no se inventa duración ni disponibilidad. La consulta está acotada y puede devolver vacío. El historial permanece en el navegador.
 
-## Despliegue en Vercel
+El despliegue remoto requiere tu cuenta de Cloudflare, acceso al repositorio y configuración de secretos. La preparación y las pruebas locales no publican el sitio ni cambian DNS. Revisa las condiciones de TMDB antes de monetizar; configura protección frente a abuso según el tráfico.
 
-1. Subir el repositorio e importarlo en Vercel con preset **Vite**.
-2. Usar `npm run build`, salida `dist` y Node 22.x.
-3. Añadir `TMDB_BEARER_TOKEN` en las variables de entorno de Production y Preview según corresponda; volver a desplegar al cambiarla.
-4. Vercel publicará los handlers de `api/` como funciones; no añadas una reescritura global que capture `/api`.
-5. Reemplazar `https://example.com/` en canonical, Open Graph y Twitter por el dominio final. Comprobar `/assets/social-card.png` y ejecutar la prueba manual con datos reales.
-
-`vercel.json` configura el build y cabeceras de seguridad. Los recursos del respaldo y los archivos de desarrollo no forman parte de `dist/`.
-
-## Atribuciones y licencias
-
-“This product uses the TMDB API but is not endorsed or certified by TMDB.”
-
-El pie incluye el logotipo oficial de TMDB y créditos de JustWatch. Los enlaces de disponibilidad llevan a la página proporcionada por TMDB. Consultar [atribución de TMDB](https://developer.themoviedb.org/docs/faq), [proveedores y JustWatch](https://developer.themoviedb.org/reference/movie-watch-providers), [Vite](https://vite.dev/guide/) y [funciones Node de Vercel](https://vercel.com/docs/functions/runtimes/node-js).
-
-**Antes de monetizar el proyecto deben revisarse las licencias y condiciones comerciales de las fuentes de datos utilizadas.**
-
-## Limitaciones
-
-- La disponibilidad regional depende de TMDB/JustWatch y puede cambiar; no es garantía contractual ni enlace directo de reproducción.
-- Una respuesta sin traducción española se descarta; TMDB puede no tener duración o proveedores. El fallo de proveedores permite mostrar el título con un aviso.
-- TV no tiene géneros independientes de terror, thriller o romance: los moods usan misterio, drama o ciencia ficción/fantasía como aproximación. No garantizan el tono de cada serie.
-- Un conjunto limitado de candidatos puede agotarse; cambia los filtros si ocurre. Las recomendaciones no son personalización por aprendizaje automático.
-- Datos locales vinculados al navegador; no se sincronizan. Sin localStorage se pierden al cerrar/recargar.
-- Compartir requiere soporte del navegador; el portapapeles normalmente requiere HTTPS o localhost.
-- La API pública tiene validación, caché y límites de trabajo, pero no un limitador distribuido por usuario. Para mayor tráfico, configurar protección/rate limiting en Vercel y supervisar la cuota de TMDB.
-
-## Roadmap (sin implementar)
-
-Selector completo de países, favoritos, cuentas de usuario, login, watchlist sincronizada, modo pareja, recomendaciones personalizadas, páginas SEO, PWA, rankings y filtros avanzados.
-
-## Verificación de esta etapa
-
-- `npm install`: completado; auditoría de instalación sin vulnerabilidades reportadas.
-- `npm test`: correcto; 11 casos en dos archivos (API y almacenamiento).
-- `npm run build`: correcto con Vite 8.3.1; 20 módulos. JS de producción: aproximadamente 9.11 kB (4.06 kB gzip), CSS: 7.45 kB (2.22 kB gzip).
-- Navegador: estados loading/success/empty/error, selección por teclado, cancelación al cambiar filtros, historial, vistos, compartir y fallback de localStorage comprobados con respuestas controladas.
-- Sin scroll horizontal en cuestionario y resultado a 320, 375, 430, 768, 1024 y 1440 px. Capturas de escritorio y móvil revisadas.
-- A 1440 px, posiciones y dimensiones del hero, título, tarjeta decorativa y cuestionario coinciden con el respaldo original; el fondo conserva exactamente su color.
-- Sin token: API real local devuelve 503 con `NOT_CONFIGURED`; no se incluyen credenciales ni llamadas directas al API de TMDB en el bundle del cliente.
-- Los hashes SHA-256 de los tres archivos de `backup-original/` permanecen idénticos.
-- Pendientes: consulta real con credencial TMDB, validación del catálogo regional en vivo, dominio definitivo y despliegue real en Vercel.
-
-### Carga de estilos y Vercel dev
-
-`index.html` carga `/src/styles/main.css` mediante un `<link rel="stylesheet">`. Esta entrada importa los seis módulos CSS en orden; Vite los procesa y genera una hoja CSS en `dist/assets/`. No mover estos imports a JavaScript: en desarrollo Vite los inyectaría como etiquetas `<style>`, bloqueadas por la política `style-src 'self'` que aplica `vercel dev`. La hoja externa conserva la política estricta y funciona en desarrollo y producción.
+Documentación oficial: [Pages Functions](https://developers.cloudflare.com/pages/functions/get-started/), [desarrollo local](https://developers.cloudflare.com/pages/functions/local-development/), [bindings y secretos](https://developers.cloudflare.com/pages/functions/bindings/), [configuración Wrangler](https://developers.cloudflare.com/pages/functions/wrangler-configuration/), [deploy con Wrangler](https://developers.cloudflare.com/workers/wrangler/commands/pages/).

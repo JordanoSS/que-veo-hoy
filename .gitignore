@@ -3,6 +3,12 @@ dist/
 .env
 .env.*
 !.env.example
-.vercel/
 *.log
-.vercel
+
+.dev.vars
+.dev.vars.*
+!.dev.vars.example
+.wrangler/
+
+# Evitar subir cachés regeneradas por herramientas antiguas.
+.vercel/

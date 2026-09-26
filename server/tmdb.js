@@ -1,6 +1,6 @@
-import { yearError } from "../../src/config/recommendation.js";
-import { moods } from "../../src/config/moods.js";
-import { platforms, regions, defaultRegion } from "../../src/config/platforms.js";
+import { yearError } from "../src/config/recommendation.js";
+import { moods } from "../src/config/moods.js";
+import { platforms, regions, defaultRegion } from "../src/config/platforms.js";
 
 export class ApiError extends Error {
   constructor(status, code, message) {
@@ -44,8 +44,8 @@ export const titleSchema = {
 export const mediaPath = type => type === "movie" ? "movie" : "tv";
 
 // La credencial solo se lee aquí, nunca se entrega al navegador ni se registra.
-export async function tmdb(path, params = {}) {
-  const token = process.env.TMDB_BEARER_TOKEN;
+export async function tmdb(env, path, params = {}) {
+  const token = env?.TMDB_BEARER_TOKEN;
   if (!token) throw new ApiError(503, "NOT_CONFIGURED", "El servicio de recomendaciones todavía no está configurado.");
   const url = new URL(`https://api.themoviedb.org/3/${path}`);
   url.search = new URLSearchParams({ language: "es-ES", ...params });
@@ -67,24 +67,27 @@ export async function tmdb(path, params = {}) {
 }
 
 export function endpoint(action, cacheSeconds = 300) {
-  return async (req, res) => {
-    res.setHeader("Content-Type", "application/json; charset=utf-8");
-    res.setHeader("X-Content-Type-Options", "nosniff");
+  return async context => {
+    const headers = {
+      "Content-Type": "application/json; charset=utf-8",
+      "X-Content-Type-Options": "nosniff",
+      "Referrer-Policy": "strict-origin-when-cross-origin",
+      "Content-Security-Policy": "default-src 'self'; img-src 'self' https://image.tmdb.org; script-src 'self'; style-src 'self'; connect-src 'self'; base-uri 'self'; frame-ancestors 'none'; form-action 'self'"
+    };
     try {
-      const data = await action(req);
-      res.setHeader("Cache-Control", `public, max-age=60, s-maxage=${cacheSeconds}, stale-while-revalidate=60`);
-      res.statusCode = 200;
-      res.end(JSON.stringify({ ok: true, data }));
+      const data = await action(context);
+      headers["Cache-Control"] = `public, max-age=60, s-maxage=${cacheSeconds}, stale-while-revalidate=60`;
+      return Response.json({ ok: true, data }, { status: 200, headers });
     } catch (error) {
       const known = error instanceof ApiError;
-      res.statusCode = known ? error.status : 500;
-      res.setHeader("Cache-Control", "no-store");
-      if (res.statusCode === 405) res.setHeader("Allow", "GET");
-      if (res.statusCode === 429) res.setHeader("Retry-After", "30");
-      res.end(JSON.stringify({ ok: false, error: {
+      const status = known ? error.status : 500;
+      headers["Cache-Control"] = "no-store";
+      if (status === 405) headers.Allow = "GET";
+      if (status === 429) headers["Retry-After"] = "30";
+      return Response.json({ ok: false, error: {
         code: known ? error.code : "INTERNAL_ERROR",
         message: known ? error.message : "No pudimos obtener recomendaciones. Intenta nuevamente."
-      } }));
+      } }, { status, headers });
     }
   };
 }

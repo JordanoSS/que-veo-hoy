@@ -1,0 +1,2 @@
+# Solo desarrollo local. Copia a .dev.vars y completa el token privado.
+TMDB_BEARER_TOKEN=

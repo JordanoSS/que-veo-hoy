@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { matchesCandidate, fallbackStages, currentYear, yearError } from "../src/config/recommendation.js";
 import { findTitle } from "../src/services/recommendation.js";
 import { explanation } from "../src/utils/format.js";
-import discover from "../api/discover.js";
+import { onRequest as discover } from "../functions/api/discover.js";
 
 const filters = { type: "movie", mood: "action", time: "120", platform: "netflix", region: "EC", yearFrom: 2015, yearTo: currentYear() };
 const title = (overrides = {}) => ({ id: 1, type: "movie", title: "Una película", date: "2024-01-01", genreIds: [28], genres: ["Acción"], poster: "/poster.jpg", overview: "Una sinopsis.", score: 7, votes: 200, adult: false, runtime: 100, ...overrides });
@@ -73,18 +73,14 @@ test("prueba otro candidato, excluye vistos y actual; any intenta ambos tipos an
 });
 
 async function invoke(query) {
-  let body;
-  const res = { setHeader() {}, end(value) { body = JSON.parse(value); } };
-  await discover({ method: "GET", url: `/api/discover?${query}` }, res);
-  return { status: res.statusCode, body };
+  const response = await discover({ request: new Request(`http://localhost/api/discover?${query}`), env: { TMDB_BEARER_TOKEN: "test-only" } });
+  assert.ok(response instanceof Response);
+  return { status: response.status, body: await response.json() };
 }
 test("API valida mood obligatorio y rangos inválidos", async () => {
   for (const query of ["", "mood=action&yearFrom=2020&yearTo=1990", "mood=action&yearFrom=", "mood=action&yearFrom=1800", `mood=random&yearTo=${currentYear() + 1}`]) assert.equal((await invoke(query)).status, 400);
 });
 test("API envía fechas movie/TV y descarta géneros, tipos y años incompatibles", async t => {
-  const previous = process.env.TMDB_BEARER_TOKEN;
-  process.env.TMDB_BEARER_TOKEN = "test-only";
-  t.after(() => { if (previous === undefined) delete process.env.TMDB_BEARER_TOKEN; else process.env.TMDB_BEARER_TOKEN = previous; });
   const calls = [];
   t.mock.method(globalThis, "fetch", async url => {
     calls.push(url);
