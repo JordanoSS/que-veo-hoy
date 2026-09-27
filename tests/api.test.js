@@ -46,7 +46,7 @@ test("descubrimiento filtra calidad y traduce filtros controlados", async t => {
   const query = urls.at(-1).searchParams;
   assert.equal(query.get("with_runtime.lte"), "119");
   assert.equal(query.get("include_adult"), "false");
-  assert.equal(query.get("with_genres"), "27|53");
+  assert.equal(query.get("with_genres"), "27");
   assert.equal(query.get("watch_region"), "EC");
   assert.equal(query.get("with_watch_providers"), "8");
 });

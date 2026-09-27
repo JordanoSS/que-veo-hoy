@@ -6,6 +6,7 @@
   background: var(--black);
   color: var(--white);
   scroll-margin-top: 24px;
+  overflow-anchor: none;
 }
 
 .result-card {
@@ -105,7 +106,9 @@
 .result > .result-button { margin-top: 24px; }
 .result :focus-visible { outline-color: var(--yellow); }
 .share-status { margin-top: 20px; }
-.share-status:empty { display: none; }
+.share-status { min-height: 1.65em; }
+.result-button:disabled { cursor: wait; opacity: 0.65; }
+.result-poster[hidden], .poster-fallback[hidden] { display: none; }
 .share-status textarea {
   width: 100%;
   min-height: 180px;

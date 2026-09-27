@@ -4,7 +4,7 @@ export function errorState(container, state, retry) {
   heading.textContent = state === "empty" ? "OTRA COMBINACIÓN." : "ALGO FALLÓ.";
   const message = document.createElement("p");
   message.textContent = state === "empty"
-    ? "No encontramos algo que encaje exactamente. Prueba cambiando algún filtro."
+    ? "No encontramos una recomendación que cumpla todos esos filtros. Puedes probar otra plataforma o ampliar la duración."
     : "No pudimos obtener recomendaciones. Intenta nuevamente.";
   container.append(heading, message);
   if (state === "error") {

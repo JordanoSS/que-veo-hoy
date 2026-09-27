@@ -31,11 +31,11 @@ export function setRegion(region) {
   if (regions.includes(region)) write("region", region);
 }
 export const getRecent = () => validKeys("recent").slice(-30);
-export const getSeen = () => validKeys("seen");
+export const getSeen = () => validKeys("seen").slice(-1000);
 export function addRecent(title) {
   const key = titleKey(title);
   write("recent", [...getRecent().filter(item => item !== key), key].slice(-30));
 }
 export function addSeen(title) {
-  write("seen", [...new Set([...getSeen(), titleKey(title)])]);
+  write("seen", [...new Set([...getSeen(), titleKey(title)])].slice(-1000));
 }

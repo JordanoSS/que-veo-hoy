@@ -28,7 +28,7 @@ export function validate(req, schema) {
 }
 const choice = (values, fallback) => ({ default: fallback, check: value => values.includes(value) });
 export const discoverSchema = {
-  type: choice(["movie", "tv", "series", "any"], "any"),
+  type: choice(["movie", "tv", "series", "any", "anime"], "any"),
   platform: choice(Object.keys(platforms), "any"),
   mood: choice(Object.keys(moods)),
   yearFrom: { check: value => value === undefined || (value !== "" && !yearError({ yearFrom: value })) },
@@ -93,6 +93,7 @@ export function endpoint(action, cacheSeconds = 300) {
 }
 
 export function normalizeTitle(item, type) {
+  type = mediaPath(type);
   const runtimes = type === "movie" ? [item.runtime] : item.episode_run_time ?? [];
   const duration = runtimes.filter(value => Number.isFinite(value) && value > 0);
   return {
@@ -102,6 +103,12 @@ export function normalizeTitle(item, type) {
     poster: /^\/[\w.-]+$/.test(item.poster_path ?? "") ? `https://image.tmdb.org/t/p/w500${item.poster_path}` : null,
     overview: item.overview?.trim() || "", score: item.vote_average ?? 0,
     votes: item.vote_count ?? 0, genres: (item.genres ?? []).map(genre => genre.name),
+    originalTitle: item.original_title || item.original_name || "",
+    originalLanguage: item.original_language || "",
+    originCountries: item.origin_country ?? (item.production_countries ?? []).map(country => country.iso_3166_1),
+    productionCountries: (item.production_countries ?? []).map(country => country.iso_3166_1),
+    keywords: (item.keywords?.keywords ?? item.keywords?.results ?? []).map(keyword => keyword.name),
+    popularity: item.popularity ?? 0,
     runtime: duration.length ? Math.max(...duration) : null
   };
 }

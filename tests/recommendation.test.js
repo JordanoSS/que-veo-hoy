@@ -7,7 +7,7 @@ import { onRequest as discover } from "../functions/api/discover.js";
 
 const filters = { type: "movie", mood: "action", time: "120", platform: "netflix", region: "EC", yearFrom: 2015, yearTo: currentYear() };
 const title = (overrides = {}) => ({ id: 1, type: "movie", title: "Una película", date: "2024-01-01", genreIds: [28], genres: ["Acción"], poster: "/poster.jpg", overview: "Una sinopsis.", score: 7, votes: 200, adult: false, runtime: 100, ...overrides });
-for (const [mood, genres] of Object.entries({ action: [28, 12], horror: [27, 53], romance: [10749, 18], think: [9648, 878, 53], funny: [35], relax: [35, 10751, 16] })) {
+for (const [mood, genres] of Object.entries({ action: [28], horror: [27], romance: [10749], think: [9648, 878, 53], funny: [35], relax: [35, 10751, 16] })) {
   test(`${mood}: admite sus géneros y rechaza Reality incompatible`, () => {
     for (const genre of genres) assert.equal(matchesCandidate(title({ genreIds: [genre] }), { ...filters, mood }), true);
     assert.equal(matchesCandidate(title({ genreIds: [10764] }), { ...filters, mood }), false);

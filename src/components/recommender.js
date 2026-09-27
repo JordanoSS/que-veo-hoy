@@ -7,11 +7,13 @@ import { loadingState } from "./loadingState.js";
 import { errorState } from "./errorState.js";
 import { resultCard } from "./resultCard.js";
 
-export function initRecommender() {
+export function initRecommender(findRecommendation = findTitle) {
   const selections = { platform: "any", type: "any", mood: null, time: "any", yearPreset: "any", yearFrom: undefined, yearTo: undefined };
   const result = document.getElementById("result");
   const recommend = document.getElementById("recommendButton");
   let controller;
+  let cycleFilters;
+  let cardStatus;
   let currentKey = getRecent().at(-1);
   setRegion(getRegion());
 
@@ -45,6 +47,9 @@ export function initRecommender() {
     controller?.abort();
     controller = undefined;
     loading = false;
+    cycleFilters = undefined;
+    cardStatus = undefined;
+    result.style.minHeight = "";
     result.setAttribute("aria-busy", "false");
     result.classList.add("hidden");
     sync();
@@ -82,35 +87,50 @@ export function initRecommender() {
 
   sync();
 
-  async function run() {
+  async function run(refresh = false) {
     if (loading || !Object.hasOwn(moods, selections.mood) || yearError(selections, selections.yearPreset === "custom")) return;
     controller?.abort();
     const active = new AbortController();
     controller = active;
     const { yearPreset, ...selectedFilters } = selections;
-    const filters = { ...selectedFilters, region: getRegion() };
+    const filters = refresh && cycleFilters ? { ...cycleFilters } : { ...selectedFilters, region: getRegion() };
+    cycleFilters = { ...filters };
+    const preserveCard = refresh && Boolean(cardStatus);
+    if (!refresh) result.style.minHeight = "";
+    // Reserva la altura ya ocupada para que un título más corto no reduzca
+    // el documento bajo el viewport. No hay scroll forzado en un refresh.
+    if (preserveCard) {
+      result.style.minHeight = `${result.getBoundingClientRect().height}px`;
+      for (const body of result.querySelectorAll(".result-body")) {
+        body.style.minHeight = `${body.getBoundingClientRect().height}px`;
+      }
+    }
     const timeout = setTimeout(() => active.abort("timeout"), 45000);
     loading = true;
     sync();
     result.classList.remove("hidden");
     result.dataset.state = "loading";
     result.setAttribute("aria-busy", "true");
-    loadingState(result);
-    result.scrollIntoView({ behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "instant" : "smooth", block: "start" });
+    if (preserveCard) {
+      cardStatus.textContent = "Buscando otra...";
+      for (const button of result.querySelectorAll(".result-actions button")) button.disabled = true;
+    } else loadingState(result);
+    if (!refresh) result.scrollIntoView({ behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "instant" : "smooth", block: "start" });
     try {
-      const found = await findTitle(filters, active.signal, { seen: getSeen(), recent: getRecent(), currentKey });
+      const found = await findRecommendation(filters, active.signal, { seen: getSeen(), recent: getRecent(), currentKey });
       if (active.signal.aborted) return;
       if (!found) {
         result.dataset.state = "empty";
-        errorState(result, "empty", run);
+        if (preserveCard) cardStatus.textContent = "No encontramos otra recomendación que cumpla todos esos filtros. Puedes probar otra plataforma o ampliar la duración. Conservamos tu última recomendación.";
+        else errorState(result, "empty", () => run(true));
       } else {
         const { title, availability } = found;
         currentKey = titleKey(title);
         addRecent(title);
         result.dataset.state = "success";
         const status = resultCard(result, title, availability, { ...filters, effective: found.effective, relaxed: found.relaxed }, {
-          another: run,
-          seen: () => { addSeen(title); run(); },
+          another: () => run(true),
+          seen: () => { addSeen(title); return run(true); },
           share: async button => {
             button.disabled = true;
             const text = shareText(title, filters);
@@ -133,21 +153,24 @@ export function initRecommender() {
             } finally { button.disabled = false; }
           }
         });
+        cardStatus = status;
       }
-      result.focus({ preventScroll: true });
+      if (!refresh) result.focus({ preventScroll: true });
     } catch (error) {
       if (active.signal.aborted && active.signal.reason !== "timeout") return;
       result.dataset.state = "error";
-      errorState(result, "error", run);
-      result.focus({ preventScroll: true });
+      if (preserveCard) cardStatus.textContent = "No pudimos obtener otra recomendación. Pulsa VER OTRA para reintentar. Conservamos tu última recomendación.";
+      else errorState(result, "error", () => run(true));
+      if (!refresh) result.focus({ preventScroll: true });
     } finally {
       clearTimeout(timeout);
       if (controller === active) {
         loading = false;
+        for (const button of result.querySelectorAll(".result-actions button")) button.disabled = false;
         sync();
         result.setAttribute("aria-busy", "false");
       }
     }
   }
-  recommend.addEventListener("click", run);
+  recommend.addEventListener("click", () => run());
 }

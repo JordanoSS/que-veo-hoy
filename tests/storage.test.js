@@ -47,3 +47,13 @@ test("cuota agotada no restaura datos antiguos al volver a leer", async () => {
   storage.addRecent({ type: "movie", id: 2 });
   assert.deepEqual(storage.getRecent(), ["movie:1", "movie:2"]);
 });
+
+
+test("vistos también está acotado y conserva los 1000 más recientes", async () => {
+  globalThis.localStorage = fakeStorage();
+  const storage = await import("../src/utils/storage.js?bounded-seen");
+  for (let id = 1; id <= 1005; id++) storage.addSeen({ id, type: "tv" });
+  assert.equal(storage.getSeen().length, 1000);
+  assert.equal(storage.getSeen()[0], "series:6");
+  assert.equal(storage.getSeen().at(-1), "series:1005");
+});
