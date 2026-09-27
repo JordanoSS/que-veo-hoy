@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://que-veo-hoy.pages.dev/sitemap.xml
