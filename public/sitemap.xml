@@ -1,8 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <url>
-    <loc>https://que-veo-hoy.pages.dev/</loc>
-    <changefreq>weekly</changefreq>
-    <priority>1.0</priority>
-  </url>
+  <url><loc>https://que-veo-hoy.pages.dev/</loc></url>
+  <url><loc>https://que-veo-hoy.pages.dev/privacidad</loc></url>
+  <url><loc>https://que-veo-hoy.pages.dev/cookies</loc></url>
+  <url><loc>https://que-veo-hoy.pages.dev/terminos</loc></url>
+  <url><loc>https://que-veo-hoy.pages.dev/acerca-de</loc></url>
+  <url><loc>https://que-veo-hoy.pages.dev/contacto</loc></url>
 </urlset>

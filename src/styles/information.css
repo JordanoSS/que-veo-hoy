@@ -1,0 +1,40 @@
+/* Información y controles: paleta, bordes y tipografía de QVH. */
+.skip-link { position: absolute; left: 12px; top: -100px; z-index: 10; padding: 16px; background: var(--yellow); color: var(--black); border: 2px solid; }
+.skip-link:focus { top: 12px; }
+.site-footer { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 28px; }
+.site-footer h2 { font: 800 14px monospace; margin-bottom: 12px; }
+.site-footer nav a { display: block; padding: 9px 0; color: inherit; line-height: 1.5; overflow-wrap: anywhere; }
+.footer-brand strong { font-size: 30px; }
+.footer-brand p { margin-top: 10px; }
+.site-footer .credits { grid-column: 1 / -1; font-size: 12px; }
+.information-page { max-width: 900px; padding: 64px 6% 90px; margin: auto; overflow-wrap: anywhere; }
+.information-page h1 { font-size: clamp(32px, 5vw, 64px); line-height: 1; letter-spacing: -1px; }
+.information-page h2, .privacy-controls h2 { margin: 32px 0 14px; font: 800 21px monospace; }
+.information-page p, .information-page li, .information-page dd, .privacy-controls p { font-size: 17px; line-height: 1.75; margin: 16px 0; }
+.information-page ul { padding-left: 24px; }
+.information-page a:not(.primary-button), .data-section a { color: inherit; text-underline-offset: 3px; }
+.information-page .updated { font: 13px/1.6 monospace; margin: 24px 0 36px; }
+.storage-list dt { margin-top: 24px; font-weight: bold; }
+.storage-list dd { margin-top: 8px; }
+.region-control { border: 2px solid; padding: 24px; margin-bottom: 36px; }
+.region-control label { display: block; font: 800 18px monospace; margin-bottom: 16px; }
+.region-control select { display: block; width: min(100%, 360px); min-height: 48px; padding: 12px; border: 2px solid; border-radius: 0; background: var(--yellow); color: var(--black); font: 800 17px monospace; }
+.data-section { max-width: 1250px; padding: 0 5% 64px; margin: auto; }
+.privacy-controls { border-top: 2px solid; margin-top: 32px; padding-bottom: 20px; }
+.privacy-actions { display: flex; flex-wrap: wrap; gap: 16px; }
+.privacy-actions button { max-width: 100%; overflow-wrap: anywhere; }
+.back-link { color: inherit; font: 800 14px monospace; padding: 14px 0; }
+.error-code { display: inline-block; background: var(--yellow); font: 900 clamp(64px, 12vw, 120px) monospace; padding: 8px 24px; margin-bottom: 32px; border: 2px solid; }
+@media (max-width: 850px) {
+  .site-footer { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .footer-brand { grid-column: 1 / -1; }
+  .header { height: auto; min-height: 78px; flex-wrap: wrap; gap: 12px; padding-block: 16px; }
+  .nav { display: flex; flex-wrap: wrap; gap: 8px 20px; }
+  .nav a { padding: 10px 0; }
+}
+@media (max-width: 520px) {
+  .information-page { padding: 44px 5% 64px; }
+  .site-footer { gap: 24px 16px; }
+  .region-control { padding: 18px; }
+  .privacy-actions { flex-direction: column; }
+}

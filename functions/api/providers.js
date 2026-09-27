@@ -1,12 +1,9 @@
-import { endpoint, validate, titleSchema, mediaPath, tmdb } from "../../server/tmdb.js";
+import { endpoint, validate, titleSchema, mediaPath, tmdb, ApiError } from "../../server/tmdb.js";
+import { normalizeProviders } from "../../server/providers.js";
 export const onRequest = endpoint(async ({ request, env }) => {
   const { type, id, region } = validate(request, titleSchema);
   const data = await tmdb(env, `${mediaPath(type)}/${id}/watch/providers`);
-  const local = data.results?.[region];
-  const groups = ["flatrate", "free", "ads", "rent", "buy"];
-  return {
-    region,
-    link: local?.link?.startsWith("https://www.themoviedb.org/") ? local.link : null,
-    providers: groups.flatMap(kind => (local?.[kind] ?? []).map(item => ({ id: item.provider_id, name: item.provider_name, kind })))
-  };
+  const providers = normalizeProviders(data, region);
+  if (!providers) throw new ApiError(502, "UPSTREAM_ERROR", "No pudimos comprobar la disponibilidad.");
+  return providers;
 }, 3600);

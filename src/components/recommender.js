@@ -1,7 +1,9 @@
 import { findTitle } from "../services/recommendation.js";
 import { moods } from "../config/moods.js";
 import { currentYear, yearError } from "../config/recommendation.js";
-import { getRegion, setRegion, getRecent, getSeen, addRecent, addSeen, titleKey } from "../utils/storage.js";
+import { getRegion, setRegion, getRecent, getSeen, addRecent, addSeen, getDisliked, addDisliked, resetStorageMemory, titleKey } from "../utils/storage.js";
+import { initPrivacyControls } from "./privacyControls.js";
+import { regions } from "../config/platforms.js";
 import { shareText } from "../utils/format.js";
 import { loadingState } from "./loadingState.js";
 import { errorState } from "./errorState.js";
@@ -15,7 +17,8 @@ export function initRecommender(findRecommendation = findTitle) {
   let cycleFilters;
   let cardStatus;
   let currentKey = getRecent().at(-1);
-  setRegion(getRegion());
+  const region = document.getElementById("region");
+  region.value = getRegion();
 
   const customYears = document.getElementById("customYears");
   const yearInputs = [document.getElementById("yearFrom"), document.getElementById("yearTo")];
@@ -63,6 +66,28 @@ export function initRecommender(findRecommendation = findTitle) {
     }
     invalidate();
   }
+  region.addEventListener("change", () => {
+    if (!regions.includes(region.value)) return;
+    setRegion(region.value);
+    invalidate();
+  });
+  initPrivacyControls(all => {
+    currentKey = undefined;
+    if (all) {
+      Object.assign(selections, { platform: "any", type: "any", mood: null, time: "any", yearPreset: "any", yearFrom: undefined, yearTo: undefined });
+      region.value = getRegion();
+      for (const input of yearInputs) input.value = "";
+    }
+    invalidate();
+  });
+  globalThis.addEventListener?.("storage", event => {
+    if (event.key === null || event.key.startsWith("qvh:")) {
+      resetStorageMemory();
+      currentKey = undefined;
+      region.value = getRegion();
+      invalidate();
+    }
+  });
   for (const input of yearInputs) {
     input.addEventListener("input", () => {
       if (selections.yearPreset !== "custom") return;
@@ -82,9 +107,17 @@ export function initRecommender(findRecommendation = findTitle) {
     }
   }
   for (const link of document.querySelectorAll("[data-type]")) {
-    link.addEventListener("click", () => select(document.querySelector('[data-group="type"]'), link.dataset.type));
+    link.addEventListener("click", event => {
+      if (event.ctrlKey || event.metaKey || event.shiftKey || event.altKey || event.button > 0) return;
+      event.preventDefault();
+      select(document.querySelector('[data-group="type"]'), link.dataset.type);
+      document.getElementById("recomendador").focus({ preventScroll: true });
+      document.getElementById("recomendador").scrollIntoView({ behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "instant" : "smooth" });
+    });
   }
 
+  const linkedType = new URLSearchParams(globalThis.location?.search).get("tipo");
+  if (["movie", "tv", "anime"].includes(linkedType)) selections.type = linkedType;
   sync();
 
   async function run(refresh = false) {
@@ -117,7 +150,7 @@ export function initRecommender(findRecommendation = findTitle) {
     } else loadingState(result);
     if (!refresh) result.scrollIntoView({ behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "instant" : "smooth", block: "start" });
     try {
-      const found = await findRecommendation(filters, active.signal, { seen: getSeen(), recent: getRecent(), currentKey });
+      const found = await findRecommendation(filters, active.signal, { seen: getSeen(), disliked: getDisliked(), recent: getRecent(), currentKey });
       if (active.signal.aborted) return;
       if (!found) {
         result.dataset.state = "empty";
@@ -131,6 +164,7 @@ export function initRecommender(findRecommendation = findTitle) {
         const status = resultCard(result, title, availability, { ...filters, effective: found.effective, relaxed: found.relaxed }, {
           another: () => run(true),
           seen: () => { addSeen(title); return run(true); },
+          disliked: () => { addDisliked(title); return run(true); },
           share: async button => {
             button.disabled = true;
             const text = shareText(title, filters);

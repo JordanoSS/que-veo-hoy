@@ -72,6 +72,8 @@ export function endpoint(action, cacheSeconds = 300) {
       "Content-Type": "application/json; charset=utf-8",
       "X-Content-Type-Options": "nosniff",
       "Referrer-Policy": "strict-origin-when-cross-origin",
+      "Strict-Transport-Security": "max-age=31536000",
+      "Permissions-Policy": "camera=(), microphone=(), geolocation=(), payment=()",
       "Content-Security-Policy": "default-src 'self'; img-src 'self' https://image.tmdb.org; script-src 'self'; style-src 'self'; connect-src 'self'; base-uri 'self'; frame-ancestors 'none'; form-action 'self'"
     };
     try {

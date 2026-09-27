@@ -92,7 +92,7 @@ test("H: Crunchyroll dinámico exacto por movie/TV + EC, caché, keywords TV y d
   }
   const response = await details({ request: new Request("http://localhost/api/details?type=tv&id=1"), env });
   assert.deepEqual((await response.json()).data.keywords, ["romance"]);
-  assert.equal(urls.at(-1).searchParams.get("append_to_response"), "keywords");
+  assert.equal(urls.at(-1).searchParams.get("append_to_response"), "keywords,watch/providers");
   assert.equal(matchesPlatform({ providers: [{ kind: "flatrate", name: "Crunchyroll Amazon Channel" }] }, "crunchyroll"), false);
 });
 test("plataforma no confirmada solo permite resultado tras fallback explícito", async () => {
@@ -178,4 +178,54 @@ test("Anime think: Mystery o keywords sci-fi/psychological, nunca Fantasy sola",
     assert.equal(matchesCandidate(title({ type: "tv", originalLanguage: "ja", ...extra }), { ...filters, type: "anime", mood: "think" }), true);
   }
   assert.equal(matchesCandidate(title({ type: "tv", originalLanguage: "ja", genreIds: [16, 10765], keywords: ["fantasy"] }), { ...filters, type: "anime", mood: "think" }), false);
+});
+
+test("disliked permanece excluido en todos los fallbacks", async () => {
+  const calls = [];
+  const selected = { ...filters, time: "30", platform: "netflix" };
+  const found = await findTitle(selected, signal(), { disliked: ["movie:1"] }, {
+    discover: async stage => { calls.push(stage); return { candidates: [title()] }; },
+    details: async () => { throw new Error("No debe enriquecer descartados"); }
+  });
+  assert.equal(found, null);
+  assert.deepEqual(calls, fallbackStages(selected));
+});
+
+test("early-stop con cinco excelentes evita enriquecer todo el catálogo", async () => {
+  let requests = 0;
+  const found = await findTitle(filters, signal(), {}, {
+    discover: async () => ({ candidates: Array.from({ length: 40 }, (_, id) => title({ id: id + 1, votes: 15000, score: 8.7 })) }),
+    details: async candidate => { requests++; return { ...candidate, availability: { region: "EC", providers: [] } }; },
+    providers: async () => { throw new Error("No duplicar disponibilidad anexada"); }
+  });
+  assert.ok(found.qvhScore >= 85);
+  assert.equal(requests, 8);
+  assert.ok(matchesCandidate(found.title, filters));
+});
+
+test("early-stop no se activa con candidatos sin semántica ni plataforma válida", async () => {
+  let count = 0;
+  const found = await findTitle({ ...filters, platform: "netflix" }, signal(), {}, {
+    discover: async () => ({ candidates: Array.from({ length: 12 }, (_, id) => title({ id: id + 1 })) }),
+    details: async candidate => { count++; return { ...candidate, genreIds: candidate.id === 12 ? [10749] : [18], availability: { region: "EC", providers: [{ name: "Netflix", kind: "flatrate" }] } }; }
+  });
+  assert.equal(found.title.id, 12);
+  assert.equal(count, 12);
+  assert.deepEqual(found.relaxed, { time: false, platform: false });
+});
+
+test("any: los excelentes de película no cortan prematuramente el lote de TV", async () => {
+  const enrichedTV = [];
+  const found = await findTitle({ ...filters, type: "any", mood: "action" }, signal(), {}, {
+    discover: async selected => ({ candidates: Array.from({ length: 12 }, (_, id) => title({
+      id: id + 1, type: selected.type, genreIds: [selected.type === "movie" ? 28 : 10759], votes: 15000, score: 8.7
+    })) }),
+    details: async candidate => {
+      if (candidate.type === "tv") enrichedTV.push(candidate.id);
+      return { ...candidate, genreIds: candidate.type === "tv" && candidate.id <= 4 ? [18] : candidate.genreIds,
+        availability: { region: "EC", providers: [] } };
+    }
+  });
+  assert.ok(found);
+  assert.deepEqual(enrichedTV, Array.from({ length: 12 }, (_, id) => id + 1));
 });

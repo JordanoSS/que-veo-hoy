@@ -1,111 +1,99 @@
-# ¿Qué veo hoy?
+# ¿Qué veo hoy? — QVH
 
-Recomendador en español con Vite y JavaScript, alojado en **Cloudflare Pages** con **Pages Functions**. Conserva la interfaz crema, negro y amarillo, los filtros, el historial y la región inicial Ecuador (`EC`).
+Recomendador en español de películas, series y anime. Web pública actual: **https://que-veo-hoy.pages.dev/**. Mantiene la identidad crema / negro / amarillo eléctrico y no requiere cuentas ni muestra publicidad.
 
-## Estructura
+## Producto y reglas
 
-```text
-index.html                  Página y cuestionario
-src/                        Frontend, estilos, reglas y servicios
-public/                     Assets y _headers de Cloudflare
-functions/api/discover.js    /api/discover
-functions/api/details.js     /api/details
-functions/api/providers.js   /api/providers
-server/tmdb.js              Validación, cliente privado TMDB y respuestas
-wrangler.jsonc              Nombre, salida dist y fecha de compatibilidad
-vite.config.js              Vite y proxy local /api hacia Wrangler
-tests/                      Pruebas sin llamadas externas
-backup-original/            Respaldo inmutable: no modificar
-```
+Filtros: plataforma, tipo, mood, duración, rango de años y país. Regiones admitidas: Ecuador (`EC`, inicial), México (`MX`), Colombia (`CO`), Argentina (`AR`), Perú (`PE`), Chile (`CL`) y España (`ES`). La región se elige explícitamente: no hay GPS ni inferencia por IP.
 
-`functions/` está en la raíz, junto a `src/`, `public/` y `package.json`, **fuera de `dist/`**. Cloudflare compila las funciones por separado. Los helpers están en `server/` para no generar rutas públicas adicionales. No se requiere compatibilidad Node en el runtime.
+Mood, tipo, anime y años son restricciones estrictas. Romance no equivale a Drama; Horror no equivale a Thriller; Action no equivale a Adventure; Anime requiere animación y evidencia japonesa/anime. Para TV, Romance/Horror requieren keywords fuertes. Crunchyroll + Anime + Romance se valida como intersección. Si faltan resultados se relaja primero duración y después plataforma, con explicación visible. Si nada cumple, se devuelve vacío. La duración de series corresponde al episodio.
+
+Calidad centralizada en `src/config/recommendation.js`: mínimo 30 votos y 6.5/10, póster, sinopsis, fecha y exclusión de adultos. QVH Score pondera afinidad, valoración ajustada por votos, confianza y metadatos; aleatoriza entre hasta cinco candidatos a no más de cinco puntos del mejor encontrado. `VER OTRA`, `YA LA VI` y `NO ME INTERESA` conservan los filtros y la tarjeta durante la búsqueda; un fallo conserva la última recomendación sin scroll programático adicional.
+
+## Arquitectura
+
+- HTML multipágina en la raíz: home, privacidad, cookies, términos, acerca de, contacto y 404.
+- `src/main.js`, `src/components/`, `src/services/`, `src/config/`, `src/utils/`: JavaScript nativo, estado y recomendador.
+- `src/styles/`: CSS compartido; no framework visual ni fuentes externas.
+- `src/templates/`: footer y controles de privacidad insertados por Vite en el HTML durante build/desarrollo. Son accesibles e indexables sin ejecutar JavaScript. Las páginas informativas no cargan el motor de recomendaciones.
+- `public/`: assets, `robots.txt`, `sitemap.xml`, verificación de buscador y `_headers`.
+- `functions/api/{discover,details,providers}.js`: Cloudflare Pages Functions. Solo aceptan GET y parámetros de listas permitidas.
+- `server/`: cliente privado TMDB, catálogos regionales y normalización de proveedores.
+- `tests/`: `node:test`, mocks de red y DOM; ninguna prueba principal necesita TMDB.
+- `backup-original/`: respaldo histórico inmutable. `app.js` y `style.css` de la raíz son avisos de migración, no entradas activas.
+
+Se mantienen Vite, Cloudflare Pages y Pages Functions. No hay base de datos, login, Service Worker ni dependencias nuevas. `functions/` se compila por separado de `dist/`.
 
 ## Desarrollo local
 
-Requiere Node.js 22.12 o posterior y npm.
-
-1. Instalar dependencias:
-   ```sh
-   npm install
-   ```
-2. Crear el archivo privado local:
-   ```sh
-   cp .dev.vars.example .dev.vars
-   ```
-   Editar `.dev.vars` y completar `TMDB_BEARER_TOKEN` con el **API Read Access Token** de TMDB. No compartir el archivo ni subirlo a Git. `.dev.vars`, sus variantes, `.env`, `.env.*`, `.wrangler/`, `node_modules/` y `dist/` están ignorados. Las plantillas `.example` no contienen credenciales.
-
-   Si vienes de la configuración anterior, copia únicamente el valor de `TMDB_BEARER_TOKEN` desde tu `.env` a `.dev.vars`. Wrangler da prioridad a `.dev.vars`; mantener una única fuente evita confusiones. Las funciones leen **`context.env.TMDB_BEARER_TOKEN`**, nunca `process.env` ni variables con prefijo `VITE_`.
-3. Compilar:
-   ```sh
-   npm run build
-   ```
-4. Iniciar Pages y sus funciones:
-   ```sh
-   npm run cf:dev
-   ```
-   Abre `http://localhost:8788`. Este script reconstruye `dist` antes de iniciar Wrangler; si ya compilaste, también puedes ejecutar `npx wrangler pages dev dist` directamente. No necesitas iniciar sesión en Cloudflare para desarrollo local. Reinicia Wrangler después de cambiar el secreto.
-
-Para editar la interfaz con HMR, mantén Wrangler en el puerto 8788 y abre otra terminal:
+Requiere Node.js ≥ 22.12 y npm.
 
 ```sh
-npm run dev
+npm ci
+# Solo en una instalación nueva:
+cp .dev.vars.example .dev.vars
+# Completar privadamente el API Read Access Token de TMDB en .dev.vars.
+npm run cf:dev
 ```
 
-Vite sirve la interfaz en `http://localhost:5173` y envía `/api/*` al runtime real de Wrangler. El frontend conserva sus llamadas relativas `/api/discover`, `/api/details` y `/api/providers`. `npm run preview` previsualiza solo archivos estáticos: usa `cf:dev` para probar el sitio completo. Al editar frontend usando únicamente Wrangler, vuelve a compilar para actualizar `dist/`.
+Abre `http://localhost:8788`. `cf:dev` compila Vite y ejecuta `wrangler pages dev dist`. Para HMR, mantén Wrangler abierto y ejecuta `npm run dev`: Vite sirve en `http://localhost:5173` y envía `/api/*` a Wrangler. Después de editar archivos, reconstruye si utilizas solo Wrangler. `npm run preview` no ejecuta Functions.
 
-## Probar la API
+El secreto **`TMDB_BEARER_TOKEN`** se lee únicamente de `context.env` en el servidor. Nunca debe usar prefijo `VITE_` ni aparecer en HTML, bundles o logs. `.dev.vars`, `.env`, sus variantes, `.wrangler/`, `dist/` y `node_modules/` están ignorados. No sobrescribas archivos privados existentes al preparar un entorno.
 
-```sh
-curl -i 'http://localhost:8788/api/discover?type=movie&platform=any&mood=action&time=120&yearFrom=2015&yearTo=2026&region=EC'
-curl -i 'http://localhost:8788/api/details?type=movie&id=550&region=EC'
-curl -i 'http://localhost:8788/api/providers?type=movie&id=550&region=EC'
-```
+## Cloudflare
 
-Ajusta los años al rango que quieras consultar, sin superar el año actual. Solo se admite `GET`; otro método devuelve `405` y `Allow: GET`. Parámetros desconocidos, duplicados o inválidos devuelven `400`.
+Configuración del proyecto Pages: build `npm run build`, salida `dist`, raíz del repositorio, Node ≥ 22.12. `wrangler.jsonc` conserva nombre y compatibilidad. Configura el secreto TMDB para producción y previews desde Cloudflare, sin publicarlo en Git. El comando `cf:deploy` existe como operación manual; build y tests no despliegan.
 
-- Discover acepta `type`, `platform`, `mood`, `time`, `yearFrom`, `yearTo`, `region`. Mood es obligatorio; años opcionales, entre 1900 y el año actual, sin rango invertido.
-- Detalles/proveedores aceptan `type`, `id` y `region`. `tv` es el tipo público de series; se mantiene el alias `series` por compatibilidad.
-- Regiones: EC, MX, CO, AR, PE, CL, ES.
-- Éxito: `{ "ok": true, "data": ... }`.
-- Error: `{ "ok": false, "error": { "code": "...", "message": "..." } }`.
-- Sin secreto: `503 NOT_CONFIGURED`. Proveedor no disponible: `502`; límite externo: `429`; título ausente: `404`. No se devuelven stack traces.
+Pages sirve `/privacidad`, `/cookies`, `/terminos`, `/acerca-de` y `/contacto` desde sus archivos HTML. `404.html` en la raíz de `dist` proporciona la respuesta para rutas inexistentes y evita el fallback SPA. No hay reescrituras que capturen `/api/*`.
 
-La migración conserva validación semántica de géneros, tipo y años; calidad mínima de 100 votos y puntuación 6; exclusión de adultos; y fallback de duración antes que plataforma, sin eliminar mood, tipo explícito ni años. Para TV, el tiempo corresponde al episodio. El catálogo TV no tiene Horror/Thriller: esa combinación devuelve vacío, sin sustituirla por misterio.
+## API y peticiones a TMDB
 
-Se mantienen las cabeceras de caché de éxitos y `no-store` en errores. Estas cabeceras no implican una caché persistente de Functions; no se ha añadido Cache API. Las cabeceras de seguridad anteriores se aplican mediante `public/_headers` a assets y desde los handlers a JSON.
+- `/api/discover`: `type` (movie/tv/series/any/anime), `platform`, `mood` obligatorio, `time`, `yearFrom`, `yearTo`, `region`.
+- `/api/details` y `/api/providers`: `type` (movie/tv/series), `id`, `region`.
+- Se rechazan parámetros desconocidos, repetidos, años inválidos y métodos distintos de GET.
+- Éxito: `{ "ok": true, "data": ... }`. Error: `{ "ok": false, "error": { "code": "...", "message": "..." } }`.
+- Sin configuración: 503; título inexistente: 404; límite externo: 429; fallo externo: 502. No hay stack traces en las respuestas.
 
-## Cloudflare Pages con GitHub
+`details` solicita `append_to_response=keywords,watch/providers`. Normaliza keywords de película (`keywords.keywords`) y TV (`keywords.results`), además de `item["watch/providers"].results[region]`. Devuelve `availability` regional. Un subrecurso ausente/malformado devuelve `null` y activa la consulta separada de respaldo; una respuesta válida sin país contiene una lista vacía. Nunca se interpreta un fallo como disponibilidad confirmada.
 
-1. Subir este proyecto a un repositorio GitHub y conectarlo en **Workers & Pages → Create application → Pages → Connect to Git**.
-2. Configurar:
+Discover consulta hasta dos páginas por tipo/rama, hace un pre-ranking barato, excluye recientes/vistos/descartados y enriquece en lotes de cuatro, con máximo de 40 candidatos por tipo. Se detiene con cinco candidatos válidos de al menos 85 puntos, dentro de cinco puntos del mejor. `any` evalúa ambos tipos con un cupo independiente para el corte anticipado. Este corte garantiza los criterios de aceptación, no el máximo global de todo TMDB. Si no reúne ese grupo, continúa hasta el límite. Los detalles y proveedores se reutilizan entre fallbacks; la caché de cliente dura 60 segundos (80 entradas), y los catálogos de servidor hasta una hora (100 entradas por isolate).
 
-   | Ajuste | Valor |
-   |---|---|
-   | Build command | `npm run build` |
-   | Build output directory | `dist` |
-   | Root directory | `/` (raíz del repositorio) |
-   | Node.js | 22.12 o posterior |
+Ejemplo estimado, película + cualquier plataforma, 40 candidatos válidos y dos páginas discover: antes **82 consultas TMDB** (2 + 40 details + 40 providers); ahora **10** (2 + 8 details anexados) si alcanza el umbral tras dos lotes. En navegador: **81 → 9** llamadas a `/api/*`. Son cuentas de un escenario, no mediciones de tráfico real. Si no se activa el corte: hasta 42 consultas TMDB; subrecursos ausentes, varios tipos, búsquedas de keywords/proveedores o fallbacks pueden aumentar el total. No hay rate limiter distribuido propio ni caché persistente con Cache API; las cabeceras HTTP no garantizan por sí solas caché de Functions.
 
-   El repositorio conectado debe contener `package.json` y `functions/` en su raíz. Si subes un monorepo, selecciona como raíz la carpeta de este proyecto.
-3. En **Workers & Pages → proyecto → Settings → Variables and Secrets**, añadir **`TMDB_BEARER_TOKEN` como Secret**. Configurarlo para **Production** y también **Preview** si vas a probar previews. No colocarlo en `wrangler.jsonc`, en el cliente ni bajo un nombre `VITE_`.
-4. Desplegar o volver a desplegar después de configurar el secreto. Comprobar `/api/discover` en el dominio `pages.dev` y luego, si corresponde, configurar el dominio propio.
+## Privacidad y almacenamiento local
 
-`wrangler.jsonc` solo fija el nombre `que-veo-hoy`, la carpeta `dist` y la fecha de compatibilidad. Cambia `name` si tu proyecto de Pages tiene otro nombre. No contiene IDs de cuenta ni secretos.
+| Clave | Uso | Límite |
+|---|---|---|
+| `qvh:region` | País elegido | Una región; EC inicial |
+| `qvh:recent` | Evitar repeticiones recientes | 30 títulos |
+| `qvh:seen` | Títulos ya vistos | 1000 títulos |
+| `qvh:disliked` | Títulos que no interesan | 1000 títulos |
 
-## Desplegar con Wrangler como alternativa
+Las listas contienen tipo e ID y no se envían como listas al servidor. Permanecen hasta borrado o hasta que sus límites retiren las entradas más antiguas. Los demás filtros viven en memoria de página. Si localStorage está bloqueado se usa memoria temporal. Una entrada descartada no se vuelve a recomendar mientras siga en la lista; no se promete exclusión perpetua tras borrado o expulsión por límite.
 
-Desde la raíz de este proyecto:
+**Borrar historial** elimina recientes, vistos y descartados, manteniendo país/filtros. **Borrar todos mis datos locales** elimina solo claves `qvh:*`, restablece Ecuador y reinicia filtros. Nunca usa `localStorage.clear()`. Ambas acciones invalidan resultados y peticiones activas, y anuncian confirmación o imposibilidad de confirmar borrado persistente. Los cambios de otra pestaña invalidan el resultado para evitar disponibilidad o historial antiguos. Los controles están en home y `/cookies`.
 
-```sh
-npx wrangler login
-# Solo si el proyecto todavía no existe:
-npx wrangler pages project create que-veo-hoy --production-branch main
-# El comando solicita el valor de forma interactiva; no lo incluyas en la línea de comandos:
-npx wrangler pages secret put TMDB_BEARER_TOKEN --project-name que-veo-hoy
-npm run cf:deploy -- --branch main
-```
+## Analytics y seguridad
 
-`cf:deploy` ejecuta build y `wrangler pages deploy dist`; incluye Pages Functions automáticamente. Usa la rama de producción real en lugar de `main` si difiere. Otra rama crea un preview; configura también su secreto en el dashboard. Los secretos de `.dev.vars` **no se suben automáticamente**. Evita el arrastrar y soltar de `dist` en el dashboard para este proyecto: necesitas desplegar también las funciones.
+Se conserva el identificador público existente de Cloudflare Web Analytics. El beacon se carga con `defer` desde `https://static.cloudflareinsights.com/beacon.min.js` en home y páginas informativas; no es un secreto TMDB. No se instrumentan preferencias, historial ni eventos personalizados. Cloudflare documenta Analytics sin cookies; no hay banner publicitario, AdSense, Google Analytics, GTM ni CMP.
+
+CSP anterior: `script-src 'self'; connect-src 'self'`. Ahora se añaden exclusivamente:
+
+- `https://static.cloudflareinsights.com` a `script-src`, para descargar el beacon.
+- `https://cloudflareinsights.com` a `connect-src`, para enviar métricas; `'self'` ya permite `/cdn-cgi/rum` y `/api/*`.
+- Un hash SHA-256 del bloque JSON-LD exacto, sin habilitar scripts inline arbitrarios. La prueba SEO comprueba el hash; debe actualizarse si cambia ese bloque.
+
+Se mantienen imágenes TMDB en `img-src`, CSS y recursos locales. `object-src 'none'`, `frame-ancestors 'none'`, `base-uri 'self'` y `form-action 'self'`; sin comodines ni `unsafe-eval`/`unsafe-inline`. Se añaden HSTS de un año para HTTPS, Permissions-Policy sin cámara/micrófono/geolocalización/pagos, y se conservan nosniff y Referrer-Policy. Functions devuelve sus propias cabeceras de seguridad porque `_headers` afecta los assets. Texto de catálogo mediante `textContent` y enlaces de proveedor restringidos al origen TMDB.
+
+La aceptación final del beacon debe comprobarse en red y en el panel de Cloudflare después de publicar; bloqueadores pueden impedirlo. Si se activa la inyección automática de Analytics en Pages, evitar duplicar el snippet manual. No conocemos desde el repositorio la retención exacta de logs de infraestructura ni la configuración de seguridad del dashboard.
+
+## SEO, información pública y accesibilidad
+
+Canonical oficial, Open Graph, Twitter Card, favicon y JSON-LD `WebSite` reales. `social-card.png` es 1200 × 630; no se modificó. `sitemap.xml` incluye home y las cinco páginas informativas; `robots.txt` permite rastreo. 404 lleva `noindex` y no aparece en el sitemap. No se garantiza indexación por el mero hecho de publicar.
+
+Páginas de privacidad, cookies/almacenamiento, términos, acerca de/créditos y contacto actualizadas el 27-09-2026. Contacto temporal: https://github.com/JordanoSS/que-veo-hoy/issues. Los issues son públicos; no publicar datos personales o secretos.
+
+Enlaces para saltar al contenido, labels, controles nativos, foco visible, navegación móvil visible, `aria-pressed`, estados en español y `prefers-reduced-motion`. El glitch decorativo termina a los cinco segundos. Pósteres con dimensiones explícitas y carga diferida. WCAG 2.2 AA y LCP < 2.5 s / INP < 200 ms / CLS < 0.1 son objetivos, no una certificación ni mediciones obtenidas.
 
 ## Verificación
 
@@ -115,12 +103,22 @@ npm run build
 bash .agents/skills/que-veo-hoy-maintainer/scripts/verify.sh
 ```
 
-Las pruebas usan `node:test` con `Request`, `Response` y `context.env` de prueba, sin necesitar credenciales ni red. Cubren contratos y errores de las tres rutas, token por contexto, filtros semánticos, años, fallback, estado visual, historial y ausencia de secretos en cliente/build. No se modificaron HTML, CSS, componentes ni lógica del recomendador durante esta migración.
+La suite cubre filtros V2, anime, año/tipo, fallback, score, exclusiones, almacenamiento y borrado, país, estabilidad DOM/scroll de Ver otra, errores, API, append y early-stop, SEO, CSP, sitemap y ausencia de credenciales reales en fuentes/build. `tests/public.test.js` valida páginas y fragmentos compartidos sin navegador. Las pruebas de seguridad revisan archivos nuevos además de los existentes, sin depender de subprocessos Git.
 
-## Atribución y límites
+Para QA visual pendiente, ejecutar `scripts/check-public-browser.js` con la herramienta Playwright `browser_run_code_unsafe(filename)` y `cf:dev` abierto. Usa API simulada y comprueba home, información, 404 y resultados a 320, 375, 430, 768, 1024 y 1440 px; también teclado y reflow equivalente al 200 %. Los scripts `check-v2*` conservan las regresiones históricas. No añadir tests de red TMDB a la suite principal.
 
-TMDB aporta catálogo e imágenes; JustWatch, disponibilidad mediante TMDB. Se conserva la atribución visible: “This product uses the TMDB API but is not endorsed or certified by TMDB.” La disponibilidad regional y los metadatos pueden ser incompletos; no se inventa duración ni disponibilidad. La consulta está acotada y puede devolver vacío. El historial permanece en el navegador.
+En el entorno de esta pasada no fue posible abrir puertos (`EPERM`), Wrangler no pudo enumerar interfaces (`uv_interface_addresses`) y Playwright exigió una aprobación deshabilitada. Por ello quedan pendientes inspección visual, zoom real, mediciones CWV, HTTP local y confirmación del beacon y append contra servicios reales. No confundir tests de DOM con renderizado visual.
 
-El despliegue remoto requiere tu cuenta de Cloudflare, acceso al repositorio y configuración de secretos. La preparación y las pruebas locales no publican el sitio ni cambian DNS. Revisa las condiciones de TMDB antes de monetizar; configura protección frente a abuso según el tráfico.
+## Atribución y próximos pasos
 
-Documentación oficial: [Pages Functions](https://developers.cloudflare.com/pages/functions/get-started/), [desarrollo local](https://developers.cloudflare.com/pages/functions/local-development/), [bindings y secretos](https://developers.cloudflare.com/pages/functions/bindings/), [configuración Wrangler](https://developers.cloudflare.com/pages/functions/wrangler-configuration/), [deploy con Wrangler](https://developers.cloudflare.com/workers/wrangler/commands/pages/).
+This product uses the TMDB API but is not endorsed or certified by TMDB.
+
+TMDB aporta metadatos y pósteres; JustWatch aporta disponibilidad mediante TMDB. Los metadatos y la disponibilidad pueden estar incompletos o cambiar. No se inventan duración ni disponibilidad. El catálogo consultado es acotado.
+
+Antes de monetizar, revisar licencia comercial de TMDB y requisitos de consentimiento/CMP aplicables.
+
+PWA queda pendiente: el sitio tiene favicon SVG, pero no un juego de iconos de instalación validado en 192/512 px. No se añadió manifest ni Service Worker ni caché offline de API. Priorizar QA de navegador, comprobación real de Analytics y TMDB, Search Console y protección frente a abuso según tráfico antes de sumar funciones.
+
+Fuentes oficiales consultadas:
+- [TMDB append](https://developer.themoviedb.org/docs/append-to-response), [movie providers](https://developer.themoviedb.org/reference/movie-watch-providers), [TV providers](https://developer.themoviedb.org/reference/tv-series-watch-providers).
+- [Cloudflare CSP](https://developers.cloudflare.com/fundamentals/reference/policies-compliances/content-security-policies/), [recolección Analytics](https://developers.cloudflare.com/web-analytics/data-metrics/data-origin-and-collection/), [rutas y 404 Pages](https://developers.cloudflare.com/pages/configuration/serving-pages/).

@@ -115,3 +115,48 @@ test("las tres rutas conservan Response, contrato de error y métodos", async ()
     assert.equal(method.body.error.code, "METHOD_NOT_ALLOWED");
   }
 });
+
+test("append movie/TV normaliza keywords y watch/providers por país en una petición", async t => {
+  let requests = 0;
+  t.mock.method(globalThis, "fetch", async url => {
+    requests++;
+    assert.equal(url.searchParams.get("append_to_response"), "keywords,watch/providers");
+    return Response.json({ ...movie(10), keywords: url.pathname.includes("/tv/") ? { results: [{ name: "romance" }] } : { keywords: [{ name: "romance" }] },
+      "watch/providers": { results: { MX: { link: "https://www.themoviedb.org/movie/10/watch", flatrate: [{ provider_id: 8, provider_name: "Netflix" }] }, EC: { buy: [{ provider_id: 9, provider_name: "Tienda" }] } } } });
+  });
+  for (const type of ["movie", "tv"]) {
+    const result = await call(details, `/api/details?type=${type}&id=10&region=MX`);
+    assert.deepEqual(result.body.data.keywords, ["romance"]);
+    assert.equal(result.body.data.availability.region, "MX");
+    assert.deepEqual(result.body.data.availability.providers, [{ id: 8, name: "Netflix", kind: "flatrate" }]);
+  }
+  assert.equal(requests, 2);
+});
+
+test("append ausente no inventa disponibilidad; región ausente es lista vacía", async t => {
+  t.mock.method(globalThis, "fetch", async () => Response.json(movie(1)));
+  assert.equal((await call(details, "/api/details?type=movie&id=1")).body.data.availability, null);
+  globalThis.fetch = async () => Response.json({ ...movie(1), "watch/providers": { results: {} } });
+  assert.deepEqual((await call(details, "/api/details?type=movie&id=1")).body.data.availability, { region: "EC", link: null, providers: [] });
+});
+
+test("proveedores malformados: append desconocido y endpoint de respaldo con error seguro", async t => {
+  for (const local of [null, [], "invalid", { flatrate: {} }, { flatrate: [null] }, { flatrate: [{ provider_id: 8, provider_name: null }] }]) {
+    t.mock.method(globalThis, "fetch", async () => Response.json({ ...movie(1), "watch/providers": { results: { EC: local } } }));
+    const result = await call(details, "/api/details?type=movie&id=1");
+    assert.equal(result.status, 200);
+    assert.equal(result.body.data.availability, null);
+    globalThis.fetch = async () => Response.json({ results: { EC: local } });
+    const fallback = await call(providers, "/api/providers?type=movie&id=1");
+    assert.equal(fallback.status, 502);
+    assert.equal(fallback.body.error.code, "UPSTREAM_ERROR");
+  }
+});
+
+test("link de proveedor no textual se descarta sin romper datos válidos", async t => {
+  t.mock.method(globalThis, "fetch", async () => Response.json({ results: { EC: { link: 42, flatrate: [{ provider_id: 8, provider_name: "Netflix" }] } } }));
+  const result = await call(providers, "/api/providers?type=movie&id=1");
+  assert.equal(result.status, 200);
+  assert.equal(result.body.data.link, null);
+  assert.equal(result.body.data.providers[0].name, "Netflix");
+});

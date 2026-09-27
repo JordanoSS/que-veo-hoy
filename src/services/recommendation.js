@@ -4,7 +4,7 @@ import { matchesPlatform } from "../config/platforms.js";
 import { titleKey } from "../utils/storage.js";
 
 export async function findTitle(filters, signal, history = {}, api = { discover, details, providers }) {
-  const excluded = new Set([...(history.seen ?? []), ...(history.recent ?? []), history.currentKey]);
+  const excluded = new Set([...(history.disliked ?? []), ...(history.seen ?? []), ...(history.recent ?? []), history.currentKey]);
   const types = ["any", "anime"].includes(filters.type) ? ["movie", "tv"] : [filters.type];
   const detailCache = new Map();
   const providerCache = new Map();
@@ -35,7 +35,7 @@ export async function findTitle(filters, signal, history = {}, api = { discover,
           if (titleKey(title) !== key || excluded.has(titleKey(title)) || !matchesCandidate(title, effective)) return;
           let availability = null;
           try {
-            if (!providerCache.has(key)) providerCache.set(key, await api.providers(title, filters.region, signal));
+            if (!providerCache.has(key)) providerCache.set(key, title.availability?.region === filters.region ? title.availability : await api.providers(title, filters.region, signal));
             availability = providerCache.get(key);
           } catch (error) {
             if (signal?.aborted) throw error;
@@ -45,6 +45,12 @@ export async function findTitle(filters, signal, history = {}, api = { discover,
           if (stage.platform !== "any" && !matchesPlatform(availability, stage.platform)) return;
           pool.set(key, { title, availability, effective: { ...effective, type: title.type }, qvhScore: qvhScore(title, filters, availability), relaxed: { time: stage.time !== filters.time, platform: stage.platform !== filters.platform } });
         }));
+        // Solo paramos con un grupo excelente y semánticamente validado.
+        // El siguiente tipo aún se evalúa para no sesgar "cualquiera" a películas.
+        const ranked = [...pool.values()]
+          .filter(item => filters.type !== "any" || item.title.type === type)
+          .sort((a, b) => b.qvhScore - a.qvhScore);
+        if (ranked.filter(item => item.qvhScore >= ranking.excellentScore && item.qvhScore >= ranked[0].qvhScore - ranking.maxGap).length >= ranking.topCount) break;
       }
     }
     if (pool.size) {

@@ -3,7 +3,7 @@ import { matchesPlatform } from "./platforms.js";
 
 // Mismo umbral para no penalizar catálogos anime pequeños; la confianza se pondera en QVH.
 export const quality = { minVotes: 30, minScore: 6.5, requirePoster: true, requireOverview: true };
-export const ranking = { mood: 35, rating: 25, confidence: 18, popularity: 2, filters: 10, metadata: 10, priorRating: 6, priorVotes: 100, topCount: 5, maxGap: 5, candidateLimit: 40 };
+export const ranking = { mood: 35, rating: 25, confidence: 18, popularity: 2, filters: 10, metadata: 10, priorRating: 6, priorVotes: 100, topCount: 5, maxGap: 5, candidateLimit: 40, excellentScore: 85 };
 const clamp = value => Math.max(0, Math.min(1, value));
 export function qvhScore(title, filters, availability = null) {
   const votes = Math.max(0, Number(title.votes) || 0);

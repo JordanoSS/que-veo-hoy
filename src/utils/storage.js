@@ -39,3 +39,35 @@ export function addRecent(title) {
 export function addSeen(title) {
   write("seen", [...new Set([...getSeen(), titleKey(title)])].slice(-1000));
 }
+export const getDisliked = () => validKeys("disliked").slice(-1000);
+export function addDisliked(title) {
+  write("disliked", [...new Set([...getDisliked(), titleKey(title)])].slice(-1000));
+}
+function removeKeys(keys) {
+  let persisted = true;
+  for (const key of keys) {
+    memory.delete(key);
+    try { localStorage.removeItem(prefix + key); }
+    catch { persisted = false; }
+    // Evita resucitar datos antiguos si el navegador bloquea la eliminación.
+    memory.set(key, key === "region" ? defaultRegion : []);
+  }
+  return persisted;
+}
+export function clearHistory() {
+  return removeKeys(["recent", "seen", "disliked"]);
+}
+export function clearAllData() {
+  const keys = new Set(["region", "recent", "seen", "disliked", ...memory.keys()]);
+  let accessible = true;
+  try {
+    for (let index = 0; index < localStorage.length; index++) {
+      const key = localStorage.key(index);
+      if (key?.startsWith(prefix)) keys.add(key.slice(prefix.length));
+    }
+  } catch { accessible = false; }
+  const persisted = removeKeys(keys);
+  return persisted && accessible;
+}
+// Los cambios en otras pestañas deben invalidar la caché de lectura de sesión.
+export function resetStorageMemory() { memory.clear(); }

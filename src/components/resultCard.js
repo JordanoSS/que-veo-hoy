@@ -56,7 +56,7 @@ function createCard(container) {
   body.append(reason, providerArea);
   content.append(body);
   const buttons = element("div", "result-actions");
-  for (const [label, action] of [["VER OTRA", "another"], ["YA LA VI", "seen"], ["COMPARTIR", "share"]]) {
+  for (const [label, action] of [["VER OTRA", "another"], ["YA LA VI", "seen"], ["NO ME INTERESA", "disliked"], ["COMPARTIR", "share"]]) {
     const button = element("button", "result-button", label);
     button.type = "button";
     if (label === "VER OTRA") {

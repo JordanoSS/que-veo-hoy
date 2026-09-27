@@ -20,11 +20,11 @@ function node(tag = "div") {
     descendants() { return this.children.flatMap(child => [child, ...child.descendants()]); },
     querySelectorAll(selector) { return this.descendants().filter(child => selector === ".result-actions button" && child.tag === "button"); },
     getBoundingClientRect() { return { height: 800 }; },
-    scrollIntoView() { this.scrollCalls++; }, focus() { this.focusCalls++; }
+    scrollIntoView() { this.scrollCalls++; }, focus() { this.focusCalls++; }, select() { this.selected = true; }
   };
 }
 function fixture(t, finder) {
-  const html = readFileSync(new URL("../index.html", import.meta.url), "utf8");
+  const html = readFileSync(new URL("../index.html", import.meta.url), "utf8") + readFileSync(new URL("../src/templates/privacy-controls.html", import.meta.url), "utf8");
   const ids = Object.fromEntries([...html.matchAll(/id="([^"]+)"/g)].map(([, id]) => [id, Object.assign(node(), { id })]));
   const groups = [...html.matchAll(/<div\s+class="options[^"]*"\s+data-group="([^"]+)"\s*>([\s\S]*?)<\/div>/g)].map(([, name, content]) => {
     const group = node();
@@ -38,8 +38,11 @@ function fixture(t, finder) {
     group.parentElement = { querySelector: () => node() };
     return group;
   });
+  const typeLinks = ["movie", "tv", "anime"].map(type => {
+    const link = node("a"); link.dataset.type = type; return link;
+  });
   const previous = globalThis.document;
-  globalThis.document = { getElementById: id => ids[id], querySelectorAll: selector => selector === ".options" ? groups : [], createElement: node };
+  globalThis.document = { getElementById: id => ids[id], querySelectorAll: selector => selector === ".options" ? groups : selector === "[data-type]" ? typeLinks : [], querySelector: () => groups.find(group => group.dataset.group === "type"), createElement: node };
   t.after(() => { globalThis.document = previous; });
   t.mock.method(globalThis, "fetch", async url => { requests.push(new URL(url, "http://localhost")); return Response.json({ ok: true, data: { candidates: [] } }); });
   const originalMatch = globalThis.matchMedia;
@@ -49,7 +52,7 @@ function fixture(t, finder) {
   initRecommender(finder);
   const click = (name, value) => groups.find(group => group.dataset.group === name).buttons.find(button => button.dataset.value === value).click();
   const input = (id, value) => { ids[id].value = value; ids[id].listeners.input(); };
-  return { ids, groups, click, input, requests };
+  return { ids, groups, click, input, requests, typeLinks };
 }
 test("mood vacío deshabilita; action habilita y selección visual coincide con API", async t => {
   const ui = fixture(t);
@@ -193,4 +196,128 @@ test("empty inicial y error inicial muestran mensaje; reintento vuelve a success
   assert.equal(ui.ids.result.dataset.state, "error");
   await ui.ids.result.children.find(item => item.tag === "button").click();
   assert.equal(ui.ids.result.dataset.state, "success");
+});
+
+test("país invalida disponibilidad anterior y se conserva durante Ver otra", async t => {
+  const calls = [];
+  const ui = fixture(t, async filters => { calls.push({ ...filters }); return recommendation(9000 + calls.length, filters); });
+  ui.click("mood", "action");
+  await ui.ids.recommendButton.click();
+  ui.ids.region.value = "ES";
+  ui.ids.region.listeners.change();
+  assert.equal(ui.ids.result.classList.contains("hidden"), true);
+  await ui.ids.recommendButton.click();
+  await anotherButton(ui).click();
+  assert.equal(calls.at(-1).region, "ES");
+  assert.equal(calls.at(-2).region, "ES");
+});
+
+test("No me interesa excluye el título, conserva filtros y no mueve scroll", async t => {
+  const calls = [];
+  const ui = fixture(t, async (filters, signal, history) => { calls.push({ filters: { ...filters }, history }); return recommendation(9200 + calls.length, filters); });
+  ui.click("mood", "romance");
+  await ui.ids.recommendButton.click();
+  await ui.ids.result.descendants().find(item => item.textContent === "NO ME INTERESA").click();
+  assert.ok(calls.at(-1).history.disliked.includes("series:9201"));
+  assert.deepEqual(calls[0].filters, calls[1].filters);
+  assert.equal(ui.ids.result.scrollCalls, 1);
+  assert.equal(ui.ids.result.focusCalls, 1);
+});
+
+test("borrar historial conserva país; borrar todos reinicia filtros y selección visual", async t => {
+  const ui = fixture(t, async filters => recommendation(9401, filters));
+  ui.ids.region.value = "MX"; ui.ids.region.listeners.change();
+  ui.click("mood", "action"); ui.click("type", "movie");
+  await ui.ids.recommendButton.click();
+  ui.ids.clearHistory.click();
+  assert.equal(ui.ids.region.value, "MX");
+  assert.equal(ui.ids.result.classList.contains("hidden"), true);
+  assert.ok(ui.ids.privacyStatus.textContent);
+  ui.ids.clearData.click();
+  assert.equal(ui.ids.region.value, "EC");
+  assert.equal(ui.ids.recommendButton.disabled, true);
+  assert.equal(ui.groups.find(group => group.dataset.group === "mood").buttons.some(button => button.attributes["aria-pressed"] === "true"), false);
+  assert.equal(ui.groups.find(group => group.dataset.group === "type").buttons.find(button => button.dataset.value === "any").attributes["aria-pressed"], "true");
+});
+
+test("cambio de país cancela resultado tardío de la región anterior", async t => {
+  let release;
+  const ui = fixture(t, async filters => new Promise(resolve => { release = () => resolve(recommendation(9601, filters)); }));
+  ui.click("mood", "romance");
+  const pending = ui.ids.recommendButton.click();
+  ui.ids.region.value = "PE"; ui.ids.region.listeners.change();
+  release(); await pending;
+  assert.equal(ui.ids.result.classList.contains("hidden"), true);
+  assert.equal(ui.ids.recommendButton.disabled, false);
+  assert.equal(ui.ids.result.attributes["aria-busy"], "false");
+});
+
+test("compartir usa portapapeles y anuncia confirmación sin revelar preferencias locales", async t => {
+  const previousWindow = globalThis.window;
+  globalThis.window = { location: { href: "https://que-veo-hoy.pages.dev/?tipo=tv#recomendador" } };
+  t.after(() => { globalThis.window = previousWindow; });
+  const descriptor = Object.getOwnPropertyDescriptor(globalThis, "navigator");
+  let copied;
+  Object.defineProperty(globalThis, "navigator", { configurable: true, value: { clipboard: { writeText: async text => { copied = text; } } } });
+  t.after(() => { if (descriptor) Object.defineProperty(globalThis, "navigator", descriptor); else delete globalThis.navigator; });
+  const ui = fixture(t, async filters => recommendation(9701, filters));
+  ui.click("mood", "romance");
+  await ui.ids.recommendButton.click();
+  await ui.ids.result.descendants().find(item => item.textContent === "COMPARTIR").click();
+  assert.match(copied, /Anime 9701/);
+  assert.ok(copied.endsWith("https://que-veo-hoy.pages.dev/"));
+  assert.doesNotMatch(copied, /tipo=|qvh:|disliked/);
+  assert.match(statusNode(ui).textContent, /copiada/);
+});
+
+test("timeout muestra error humano y permite reintentar", async t => {
+  let expire;
+  t.mock.method(globalThis, "setTimeout", callback => { expire = callback; return 1; });
+  t.mock.method(globalThis, "clearTimeout", () => {});
+  const ui = fixture(t, async (filters, signal) => new Promise((resolve, reject) => {
+    signal.addEventListener("abort", () => reject(new Error("private timeout detail")));
+  }));
+  ui.click("mood", "action");
+  const pending = ui.ids.recommendButton.click();
+  expire(); await pending;
+  assert.equal(ui.ids.result.dataset.state, "error");
+  assert.equal(ui.ids.recommendButton.disabled, false);
+  assert.doesNotMatch(ui.ids.result.descendants().map(item => item.textContent).join(" "), /private timeout/);
+});
+
+test("compartir fallido ofrece texto seleccionable y recupera el botón", async t => {
+  const previousWindow = globalThis.window;
+  globalThis.window = { location: { href: "https://que-veo-hoy.pages.dev/" } };
+  t.after(() => { globalThis.window = previousWindow; });
+  const descriptor = Object.getOwnPropertyDescriptor(globalThis, "navigator");
+  Object.defineProperty(globalThis, "navigator", { configurable: true, value: { share: async () => { throw new Error("private message"); } } });
+  t.after(() => { if (descriptor) Object.defineProperty(globalThis, "navigator", descriptor); else delete globalThis.navigator; });
+  const ui = fixture(t, async filters => recommendation(9801, filters));
+  ui.click("mood", "romance");
+  await ui.ids.recommendButton.click();
+  const button = ui.ids.result.descendants().find(item => item.textContent === "COMPARTIR");
+  await button.click();
+  assert.equal(button.disabled, false);
+  assert.match(statusNode(ui).textContent, /Copia este texto/);
+  assert.doesNotMatch(statusNode(ui).textContent, /private message/);
+  const field = statusNode(ui).children.find(item => item.tag === "textarea");
+  assert.equal(field.readOnly, true);
+  assert.equal(field.selected, true);
+  assert.match(field.value, /Anime 9801/);
+});
+
+test("enlaces de tipo respetan clic modificado y sincronizan selección con clic normal", async t => {
+  const ui = fixture(t);
+  const link = ui.typeLinks.find(link => link.dataset.type === "anime");
+  let prevented = false;
+  const preventDefault = () => { prevented = true; };
+  link.listeners.click({ ctrlKey: true, preventDefault });
+  assert.equal(prevented, false);
+  assert.equal(ui.ids.recomendador.focusCalls, 0);
+  link.listeners.click({ button: 0, preventDefault });
+  assert.equal(prevented, true);
+  assert.equal(ui.ids.recomendador.focusCalls, 1);
+  ui.click("mood", "romance");
+  await ui.ids.recommendButton.click();
+  assert.equal(ui.requests[0].searchParams.get("type"), "anime");
 });
