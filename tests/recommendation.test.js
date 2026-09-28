@@ -16,7 +16,7 @@ for (const [mood, genres] of Object.entries({ action: [28], horror: [27], romanc
 test("tipo explícito estricto y terror TV sin sustitución por misterio", () => {
   assert.equal(matchesCandidate(title({ type: "tv", genreIds: [10759] }), filters), false);
   assert.equal(matchesCandidate(title(), { ...filters, type: "tv" }), false);
-  assert.equal(matchesCandidate(title({ type: "tv", genreIds: [10759] }), { ...filters, type: "tv" }), true);
+  assert.equal(matchesCandidate(title({ type: "tv", genreIds: [10759], keywords: ["action"] }), { ...filters, type: "tv" }), true);
   assert.equal(matchesCandidate(title({ type: "tv", genreIds: [9648] }), { ...filters, type: "tv", mood: "horror" }), false);
 });
 test("años actuales, noventa, personalizado, límites y cualquier año", () => {

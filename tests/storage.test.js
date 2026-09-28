@@ -9,8 +9,8 @@ function fakeStorage() {
 test("historial acotado, claves por tipo y vistos persistentes", async () => {
   globalThis.localStorage = fakeStorage();
   const storage = await import("../src/utils/storage.js?normal");
-  for (let id = 1; id <= 35; id++) storage.addRecent({ id, type: "movie" });
-  assert.equal(storage.getRecent().length, 30);
+  for (let id = 1; id <= 105; id++) storage.addRecent({ id, type: "movie" });
+  assert.equal(storage.getRecent().length, 100);
   assert.equal(storage.getRecent()[0], "movie:6");
   storage.addSeen({ type: "movie", id: 1 });
   storage.addSeen({ type: "series", id: 1 });

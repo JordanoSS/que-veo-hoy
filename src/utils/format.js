@@ -3,6 +3,15 @@ import { platforms } from "../config/platforms.js";
 export const timeLabels = { "30": "menos de 30 minutos", "60": "menos de 1 hora", "120": "menos de 2 horas", any: "sin límite de tiempo" };
 export const typeLabels = { anime: "anime", movie: "película", series: "serie", tv: "serie", any: "película o serie" };
 export function explanation(filters) {
+  const prefixes = {
+    safe: "Una apuesta segura, con valoración respaldada por suficientes votos. ",
+    trending: filters.sources?.includes("trending") ? "Está en las tendencias de TMDB. " : "",
+    new: "Una opción bien valorada entre las más recientes del rango buscado. ",
+    hidden: "Menos popular, pero con una valoración respaldada por suficientes votos. "
+  };
+  return (prefixes[filters.recommendationMode] ?? "") + filterExplanation(filters);
+}
+function filterExplanation(filters) {
   const used = filters.effective ?? filters;
   const years = used.yearFrom && used.yearTo ? `entre ${used.yearFrom} y ${used.yearTo}` : used.yearFrom ? `desde ${used.yearFrom}` : used.yearTo ? `hasta ${used.yearTo}` : "de cualquier año";
   const base = `${filters.type === "anime" ? "anime, " : ""}${moods[used.mood].label}, ${typeLabels[used.type]} y ${years}`;

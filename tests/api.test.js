@@ -53,7 +53,7 @@ test("descubrimiento filtra calidad y traduce filtros controlados", async t => {
 
 test("any prueba el otro tipo si el primero no tiene candidatos", async t => {
   t.mock.method(Math, "random", () => 0);
-  t.mock.method(globalThis, "fetch", async url => Response.json({ total_pages: 1, results: url.pathname.endsWith("movie") ? [] : [movie(8, { name: "Serie", first_air_date: "2024-01-01" })] }));
+  t.mock.method(globalThis, "fetch", async url => Response.json({ total_pages: 1, results: (url.pathname.endsWith("movie") || url.pathname.includes("/movie/")) ? [] : [movie(8, { name: "Serie", first_air_date: "2024-01-01" })] }));
   const result = await call(discover, "/api/discover?mood=random");
   assert.equal(result.body.data.type, "tv");
   assert.equal(result.body.data.candidates.length, 1);

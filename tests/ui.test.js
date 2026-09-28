@@ -321,3 +321,40 @@ test("enlaces de tipo respetan clic modificado y sincronizan selección con clic
   await ui.ids.recommendButton.click();
   assert.equal(ui.requests[0].searchParams.get("type"), "anime");
 });
+
+test("V3: mode default, Ver otra/seen/disliked lo conservan y cambiarlo cancela ciclo", async t => {
+  const calls = [];
+  let release;
+  const ui = fixture(t, async (filters, signal) => {
+    calls.push({ ...filters });
+    if (calls.length === 5) return new Promise(resolve => { release = () => resolve(recommendation(9905, filters)); });
+    return recommendation(9900 + calls.length, filters);
+  });
+  ui.click("mood", "romance");
+  await ui.ids.recommendButton.click();
+  assert.equal(calls[0].recommendationMode, "mix");
+  ui.click("recommendationMode", "hidden");
+  await ui.ids.recommendButton.click();
+  for (const label of ["YA LA VI", "NO ME INTERESA"]) await ui.ids.result.descendants().find(item => item.textContent === label).click();
+  assert.ok(calls.slice(1).every(item => item.recommendationMode === "hidden"));
+  const pending = anotherButton(ui).click();
+  ui.click("recommendationMode", "trending");
+  release(); await pending;
+  assert.equal(ui.ids.result.classList.contains("hidden"), true);
+  await ui.ids.recommendButton.click();
+  assert.equal(calls.at(-1).recommendationMode, "trending");
+});
+
+test("V3: agotado in-place mantiene tarjeta, scroll y foco", async t => {
+  let calls = 0;
+  const ui = fixture(t, async filters => ++calls === 1 ? recommendation(9991, filters) : { status: "exhausted" });
+  ui.click("mood", "romance");
+  await ui.ids.recommendButton.click();
+  const card = ui.ids.result.children[0];
+  await anotherButton(ui).click();
+  assert.equal(ui.ids.result.dataset.state, "exhausted");
+  assert.match(statusNode(ui).textContent, /Ya te mostramos/);
+  assert.equal(ui.ids.result.children[0], card);
+  assert.equal(ui.ids.result.scrollCalls, 1);
+  assert.equal(ui.ids.result.focusCalls, 1);
+});

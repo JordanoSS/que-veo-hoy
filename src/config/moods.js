@@ -9,6 +9,7 @@ export const moods = {
   random: { label: "sorpréndeme", movie: [], tv: [] }
 };
 export const semanticKeywords = {
+  action: ["action", "action hero", "martial arts", "gunfight", "superhero", "superheroes"],
   romance: ["romance", "romantic comedy", "romantic drama", "love story"],
   horror: ["horror", "supernatural horror", "psychological horror", "slasher"],
   scienceFiction: ["science fiction", "time travel", "artificial intelligence", "dystopia"],
@@ -39,7 +40,7 @@ export function semanticMatch(title, mood) {
     // Política conservadora: incluso Romance + Horror se descarta.
     case "romance": return !horror && (tv ? romance : has(10749)) ? (romance ? 1 : 0.95) : 0;
     case "horror": return (tv ? hasKeyword(title, semanticKeywords.horror) : has(27)) ? 1 : 0;
-    case "action": return has(tv ? 10759 : 28) ? 1 : 0;
+    case "action": return (tv ? has(10759) && hasKeyword(title, semanticKeywords.action) : has(28)) ? 1 : 0;
     case "funny": return has(35) ? 1 : 0;
     case "think": return (tv ? has(9648) || hasKeyword(title, semanticKeywords.scienceFiction) || hasKeyword(title, semanticKeywords.thriller) || hasKeyword(title, semanticKeywords.psychological) : has(9648) || has(878) || has(53)) ? 1 : 0;
     case "relax": return !horror && !thriller && !has(tv ? 10759 : 28) && [35, 10751, 16].some(has) ? 1 : 0;

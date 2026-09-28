@@ -1,3 +1,4 @@
+import { discovery } from "../config/discovery.js";
 import { defaultRegion, regions } from "../config/platforms.js";
 const memory = new Map();
 const prefix = "qvh:";
@@ -30,18 +31,18 @@ export function getRegion() {
 export function setRegion(region) {
   if (regions.includes(region)) write("region", region);
 }
-export const getRecent = () => validKeys("recent").slice(-30);
-export const getSeen = () => validKeys("seen").slice(-1000);
+export const getRecent = () => validKeys("recent").slice(-discovery.recentLimit);
+export const getSeen = () => validKeys("seen").slice(-discovery.historyLimit);
 export function addRecent(title) {
   const key = titleKey(title);
-  write("recent", [...getRecent().filter(item => item !== key), key].slice(-30));
+  write("recent", [...getRecent().filter(item => item !== key), key].slice(-discovery.recentLimit));
 }
 export function addSeen(title) {
-  write("seen", [...new Set([...getSeen(), titleKey(title)])].slice(-1000));
+  write("seen", [...new Set([...getSeen(), titleKey(title)])].slice(-discovery.historyLimit));
 }
-export const getDisliked = () => validKeys("disliked").slice(-1000);
+export const getDisliked = () => validKeys("disliked").slice(-discovery.historyLimit);
 export function addDisliked(title) {
-  write("disliked", [...new Set([...getDisliked(), titleKey(title)])].slice(-1000));
+  write("disliked", [...new Set([...getDisliked(), titleKey(title)])].slice(-discovery.historyLimit));
 }
 function removeKeys(keys) {
   let persisted = true;

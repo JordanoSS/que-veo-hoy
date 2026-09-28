@@ -3,7 +3,7 @@ import { matchesPlatform } from "./platforms.js";
 
 // Mismo umbral para no penalizar catálogos anime pequeños; la confianza se pondera en QVH.
 export const quality = { minVotes: 30, minScore: 6.5, requirePoster: true, requireOverview: true };
-export const ranking = { mood: 35, rating: 25, confidence: 18, popularity: 2, filters: 10, metadata: 10, priorRating: 6, priorVotes: 100, topCount: 5, maxGap: 5, candidateLimit: 40, excellentScore: 85 };
+export const ranking = { mood: 35, rating: 25, confidence: 18, popularity: 2, filters: 10, metadata: 10, priorRating: 6, priorVotes: 100, topCount: 5, maxGap: 5, discoverCandidateLimit: 80, enrichmentLimit: 40, targetQualifiedCandidates: 6, batchSize: 2, excellentScore: 85 };
 const clamp = value => Math.max(0, Math.min(1, value));
 export function qvhScore(title, filters, availability = null) {
   const votes = Math.max(0, Number(title.votes) || 0);
@@ -52,6 +52,18 @@ export function matchesCandidate(title, filters, checkRuntime = true, checkSeman
   if ((filters.yearFrom && year < Number(filters.yearFrom)) || (filters.yearTo && year > Number(filters.yearTo))) return false;
   if (checkRuntime && filters.time !== "any" && (!(title.runtime > 0) || title.runtime >= Number(filters.time))) return false;
   return true;
+}
+
+// Solo descarta incompatibilidades demostrables con Discover. Las keywords,
+// el origen anime y las exclusiones semánticas completas se validan en Details.
+export function matchesDiscoverCandidate(title, filters) {
+  if (!matchesCandidate(title, filters, false, false)) return false;
+  const genres = title.genreIds;
+  if (filters.type === "anime" && !genres.includes(16)) return false;
+  const type = canonicalType(title.type);
+  const required = moodGenres(filters.mood, type);
+  if (type === "tv" && ["romance", "horror", "think"].includes(filters.mood)) return true;
+  return !required.length || required.some(genre => genres.includes(genre));
 }
 
 export function fallbackStages(filters) {

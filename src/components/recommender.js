@@ -1,4 +1,4 @@
-import { findTitle } from "../services/recommendation.js";
+import { findTitle, resetRecommendationCursors } from "../services/recommendation.js";
 import { moods } from "../config/moods.js";
 import { currentYear, yearError } from "../config/recommendation.js";
 import { getRegion, setRegion, getRecent, getSeen, addRecent, addSeen, getDisliked, addDisliked, resetStorageMemory, titleKey } from "../utils/storage.js";
@@ -10,7 +10,7 @@ import { errorState } from "./errorState.js";
 import { resultCard } from "./resultCard.js";
 
 export function initRecommender(findRecommendation = findTitle) {
-  const selections = { platform: "any", type: "any", mood: null, time: "any", yearPreset: "any", yearFrom: undefined, yearTo: undefined };
+  const selections = { recommendationMode: "mix", platform: "any", type: "any", mood: null, time: "any", yearPreset: "any", yearFrom: undefined, yearTo: undefined };
   const result = document.getElementById("result");
   const recommend = document.getElementById("recommendButton");
   let controller;
@@ -72,9 +72,10 @@ export function initRecommender(findRecommendation = findTitle) {
     invalidate();
   });
   initPrivacyControls(all => {
+    resetRecommendationCursors();
     currentKey = undefined;
     if (all) {
-      Object.assign(selections, { platform: "any", type: "any", mood: null, time: "any", yearPreset: "any", yearFrom: undefined, yearTo: undefined });
+      Object.assign(selections, { recommendationMode: "mix", platform: "any", type: "any", mood: null, time: "any", yearPreset: "any", yearFrom: undefined, yearTo: undefined });
       region.value = getRegion();
       for (const input of yearInputs) input.value = "";
     }
@@ -152,16 +153,17 @@ export function initRecommender(findRecommendation = findTitle) {
     try {
       const found = await findRecommendation(filters, active.signal, { seen: getSeen(), disliked: getDisliked(), recent: getRecent(), currentKey });
       if (active.signal.aborted) return;
-      if (!found) {
-        result.dataset.state = "empty";
-        if (preserveCard) cardStatus.textContent = "No encontramos otra recomendación que cumpla todos esos filtros. Puedes probar otra plataforma o ampliar la duración. Conservamos tu última recomendación.";
-        else errorState(result, "empty", () => run(true));
+      if (!found || found.status === "exhausted") {
+        const state = found?.status ?? "empty";
+        result.dataset.state = state;
+        if (preserveCard) cardStatus.textContent = state === "exhausted" ? "Ya te mostramos las mejores opciones de esta búsqueda. Prueba otro estilo, mood, año, duración o plataforma. Conservamos tu última recomendación." : "No encontramos otra recomendación que cumpla todos esos filtros. Puedes probar otra plataforma o ampliar la duración. Conservamos tu última recomendación.";
+        else errorState(result, state, () => run(true));
       } else {
         const { title, availability } = found;
         currentKey = titleKey(title);
         addRecent(title);
         result.dataset.state = "success";
-        const status = resultCard(result, title, availability, { ...filters, effective: found.effective, relaxed: found.relaxed }, {
+        const status = resultCard(result, title, availability, { ...filters, sources: title.sources, effective: found.effective, relaxed: found.relaxed }, {
           another: () => run(true),
           seen: () => { addSeen(title); return run(true); },
           disliked: () => { addDisliked(title); return run(true); },

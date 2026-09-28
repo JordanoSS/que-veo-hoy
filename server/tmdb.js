@@ -1,3 +1,4 @@
+import { discovery, recommendationModes } from "../src/config/discovery.js";
 import { yearError } from "../src/config/recommendation.js";
 import { moods } from "../src/config/moods.js";
 import { platforms, regions, defaultRegion } from "../src/config/platforms.js";
@@ -28,6 +29,9 @@ export function validate(req, schema) {
 }
 const choice = (values, fallback) => ({ default: fallback, check: value => values.includes(value) });
 export const discoverSchema = {
+  sourceBudget: { default: String(discovery.endpointPageBudget), check: value => /^\d{1,2}$/.test(value) && Number(value) >= 1 && Number(value) <= discovery.endpointPageBudget },
+  recommendationMode: choice(recommendationModes, "mix"),
+  window: { default: "0", check: value => /^\d{1,2}$/.test(value) && Number(value) < discovery.maxWindows },
   type: choice(["movie", "tv", "series", "any", "anime"], "any"),
   platform: choice(Object.keys(platforms), "any"),
   mood: choice(Object.keys(moods)),

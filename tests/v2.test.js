@@ -55,7 +55,7 @@ test("G: Ver otra excluye recientes, actual y vistos sin reciclarlos tras fallba
   const api = { discover: async () => ({ candidates: [1, 2, 3, 4].map(id => title({ id })) }), details: async value => value, providers: async () => ({ providers: [] }) };
   const found = await findTitle(filters, signal(), { recent: ["movie:1"], currentKey: "movie:2", seen: ["movie:3"] }, api);
   assert.equal(found.title.id, 4);
-  assert.equal(await findTitle(filters, signal(), { recent: ["movie:1", "movie:4"], currentKey: "movie:2", seen: ["movie:3"] }, api), null);
+  assert.deepEqual(await findTitle(filters, signal(), { recent: ["movie:1", "movie:4"], currentKey: "movie:2", seen: ["movie:3"] }, api), { status: "exhausted" });
 });
 test("I/J: Anime exige Animation y evidencia japonesa/anime, además del mood", () => {
   assert.equal(isAnime(title({ genreIds: [16], originalLanguage: "en", originCountries: ["US"] })), false);
@@ -64,7 +64,7 @@ test("I/J: Anime exige Animation y evidencia japonesa/anime, además del mood", 
     assert.equal(matchesCandidate(title({ genreIds: [16, 10749], ...evidence }), { ...filters, type: "anime" }), true);
     assert.equal(matchesCandidate(title({ genreIds: [16, 18], ...evidence }), { ...filters, type: "anime" }), false);
   }
-  for (const [mood, genreIds, keywords] of [["romance", [16, 18], ["romance"]], ["horror", [16], ["horror"]], ["action", [16, 10759], []], ["funny", [16, 35], []]]) {
+  for (const [mood, genreIds, keywords] of [["romance", [16, 18], ["romance"]], ["horror", [16], ["horror"]], ["action", [16, 10759], ["action"]], ["funny", [16, 35], []]]) {
     assert.equal(matchesCandidate(title({ type: "tv", genreIds, keywords, originalLanguage: "ja" }), { ...filters, type: "anime", mood }), true);
   }
 });
@@ -164,7 +164,7 @@ test("Discover Anime compone Animation AND mood, también cuando el mood tiene a
     const response = await discover({ request: new Request(`http://localhost/api/discover?type=anime&mood=${mood}&yearFrom=2010&yearTo=2025`), env: { TMDB_BEARER_TOKEN: "test-only" } });
     assert.equal(response.status, 200);
     const queries = urls.filter(url => url.pathname.endsWith("discover/movie"));
-    assert.deepEqual(queries.map(url => url.searchParams.get("with_genres")), expected);
+    assert.deepEqual([...new Set(queries.map(url => url.searchParams.get("with_genres")))], expected);
     for (const url of queries) {
       assert.equal(url.searchParams.get("primary_release_date.gte"), "2010-01-01");
       assert.equal(url.searchParams.get("primary_release_date.lte"), "2025-12-31");
@@ -191,7 +191,7 @@ test("disliked permanece excluido en todos los fallbacks", async () => {
   assert.deepEqual(calls, fallbackStages(selected));
 });
 
-test("early-stop con cinco excelentes evita enriquecer todo el catálogo", async () => {
+test("early-stop con seis excelentes evita enriquecer todo el catálogo", async () => {
   let requests = 0;
   const found = await findTitle(filters, signal(), {}, {
     discover: async () => ({ candidates: Array.from({ length: 40 }, (_, id) => title({ id: id + 1, votes: 15000, score: 8.7 })) }),
@@ -199,7 +199,7 @@ test("early-stop con cinco excelentes evita enriquecer todo el catálogo", async
     providers: async () => { throw new Error("No duplicar disponibilidad anexada"); }
   });
   assert.ok(found.qvhScore >= 85);
-  assert.equal(requests, 8);
+  assert.equal(requests, 6);
   assert.ok(matchesCandidate(found.title, filters));
 });
 
@@ -223,9 +223,9 @@ test("any: los excelentes de película no cortan prematuramente el lote de TV", 
     details: async candidate => {
       if (candidate.type === "tv") enrichedTV.push(candidate.id);
       return { ...candidate, genreIds: candidate.type === "tv" && candidate.id <= 4 ? [18] : candidate.genreIds,
-        availability: { region: "EC", providers: [] } };
+        keywords: ["action"], availability: { region: "EC", providers: [] } };
     }
   });
   assert.ok(found);
-  assert.deepEqual(enrichedTV, Array.from({ length: 12 }, (_, id) => id + 1));
+  assert.deepEqual(enrichedTV, Array.from({ length: 10 }, (_, id) => id + 1));
 });

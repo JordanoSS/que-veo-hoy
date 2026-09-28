@@ -1,14 +1,26 @@
-# ¿Qué veo hoy? — QVH
+# ¿Qué veo hoy? — QVH V3 FINAL
 
 Recomendador en español de películas, series y anime. Web pública actual: **https://que-veo-hoy.pages.dev/**. Mantiene la identidad crema / negro / amarillo eléctrico y no requiere cuentas ni muestra publicidad.
 
 ## Producto y reglas
 
-Filtros: plataforma, tipo, mood, duración, rango de años y país. Regiones admitidas: Ecuador (`EC`, inicial), México (`MX`), Colombia (`CO`), Argentina (`AR`), Perú (`PE`), Chile (`CL`) y España (`ES`). La región se elige explícitamente: no hay GPS ni inferencia por IP.
+Filtros: plataforma, tipo, mood, duración, rango de años, país y estilo de recomendación. Regiones admitidas: Ecuador (`EC`, inicial), México (`MX`), Colombia (`CO`), Argentina (`AR`), Perú (`PE`), Chile (`CL`) y España (`ES`). La región se elige explícitamente: no hay GPS ni inferencia por IP.
 
 Mood, tipo, anime y años son restricciones estrictas. Romance no equivale a Drama; Horror no equivale a Thriller; Action no equivale a Adventure; Anime requiere animación y evidencia japonesa/anime. Para TV, Romance/Horror requieren keywords fuertes. Crunchyroll + Anime + Romance se valida como intersección. Si faltan resultados se relaja primero duración y después plataforma, con explicación visible. Si nada cumple, se devuelve vacío. La duración de series corresponde al episodio.
 
 Calidad centralizada en `src/config/recommendation.js`: mínimo 30 votos y 6.5/10, póster, sinopsis, fecha y exclusión de adultos. QVH Score pondera afinidad, valoración ajustada por votos, confianza y metadatos; aleatoriza entre hasta cinco candidatos a no más de cinco puntos del mejor encontrado. `VER OTRA`, `YA LA VI` y `NO ME INTERESA` conservan los filtros y la tarjeta durante la búsqueda; un fallo conserva la última recomendación sin scroll programático adicional.
+
+### Estilos V3
+
+`recommendationMode` es opcional y usa `mix` por defecto; vive en memoria, no crea una clave de localStorage.
+
+- **Safe / Apuesta segura:** Discover por valoración, mínimo 300 votos y score bayesiano; popularidad no decide por sí sola.
+- **Trending / En tendencia:** unión de `trending/movie|tv/day` y `week`, después los mismos filtros baratos, Details y disponibilidad regional. No se presentan candidatos de Discover como tendencias.
+- **New / Algo nuevo:** Discover por fecha descendente; sin años explícitos consulta los últimos 24 meses. Con rango respeta sus límites y favorece su extremo más reciente.
+- **Hidden / Joya oculta:** Discover por valoración, al menos 7/10 y 80–3000 votos; popularidad máxima 40 y penalización gradual en selección. Son heurísticas de TMDB, no una certificación editorial.
+- **Mix / Mezclar todo:** combina las cuatro fuentes, deduplica tipo+ID conservando procedencia e intercala fuentes antes del enrichment. Selecciona una fuente representada y después un buen candidato de ella; no exige cuotas cuando una fuente no cumple filtros.
+
+Se excluyen actual + 100 recientes + vistos + descartados. Al consumir una ventana se avanza por páginas, sin vaciar recent. Los cursores de sesión se separan por filtros/país/modo y se acotan a 40 combinaciones; se reinician al borrar datos. Si no queda un resultado nuevo y una comprobación semántica/regional de recientes confirma opciones ya mostradas, aparece **«Ya te mostramos las mejores opciones de esta búsqueda»**, sin cambiar filtros automáticamente. No equivale a recorrer todo TMDB; con catálogos estrechos o límites de búsqueda puede ser necesario cambiar filtros. Si no existe esa evidencia se conserva el estado vacío.
 
 ## Arquitectura
 
@@ -48,7 +60,7 @@ Pages sirve `/privacidad`, `/cookies`, `/terminos`, `/acerca-de` y `/contacto` d
 
 ## API y peticiones a TMDB
 
-- `/api/discover`: `type` (movie/tv/series/any/anime), `platform`, `mood` obligatorio, `time`, `yearFrom`, `yearTo`, `region`.
+- `/api/discover`: `type` (movie/tv/series/any/anime), `platform`, `mood` obligatorio, `time`, `yearFrom`, `yearTo`, `region`, `recommendationMode` (safe/trending/new/hidden/mix), `window` (0–19) y `sourceBudget` (1–12, interno para limitar páginas).
 - `/api/details` y `/api/providers`: `type` (movie/tv/series), `id`, `region`.
 - Se rechazan parámetros desconocidos, repetidos, años inválidos y métodos distintos de GET.
 - Éxito: `{ "ok": true, "data": ... }`. Error: `{ "ok": false, "error": { "code": "...", "message": "..." } }`.
@@ -56,16 +68,20 @@ Pages sirve `/privacidad`, `/cookies`, `/terminos`, `/acerca-de` y `/contacto` d
 
 `details` solicita `append_to_response=keywords,watch/providers`. Normaliza keywords de película (`keywords.keywords`) y TV (`keywords.results`), además de `item["watch/providers"].results[region]`. Devuelve `availability` regional. Un subrecurso ausente/malformado devuelve `null` y activa la consulta separada de respaldo; una respuesta válida sin país contiene una lista vacía. Nunca se interpreta un fallo como disponibilidad confirmada.
 
-Discover consulta hasta dos páginas por tipo/rama, hace un pre-ranking barato, excluye recientes/vistos/descartados y enriquece en lotes de cuatro, con máximo de 40 candidatos por tipo. Se detiene con cinco candidatos válidos de al menos 85 puntos, dentro de cinco puntos del mejor. `any` evalúa ambos tipos con un cupo independiente para el corte anticipado. Este corte garantiza los criterios de aceptación, no el máximo global de todo TMDB. Si no reúne ese grupo, continúa hasta el límite. Los detalles y proveedores se reutilizan entre fallbacks; la caché de cliente dura 60 segundos (80 entradas), y los catálogos de servidor hasta una hora (100 entradas por isolate).
+Límites en `src/config/discovery.js` y `src/config/recommendation.js`: hasta 40 candidatos por fuente/tipo; pre-ranking de hasta 80 tras intercalar; enrichment máximo **40 para toda la búsqueda**, incluidos tipos, fallbacks y comprobación de agotamiento. Lotes de **2** y early-stop con **6** candidatos válidos de al menos 85 puntos, a no más de 5 puntos del mejor. El top final admite hasta 5. Mood, anime, tipo y años nunca se relajan; solo duración y luego plataforma. Think acepta Mystery/Sci-Fi/Thriller en cine y Mystery o evidencia fuerte de ciencia ficción/thriller/psicología en TV.
 
-Ejemplo estimado, película + cualquier plataforma, 40 candidatos válidos y dos páginas discover: antes **82 consultas TMDB** (2 + 40 details + 40 providers); ahora **10** (2 + 8 details anexados) si alcanza el umbral tras dos lotes. En navegador: **81 → 9** llamadas a `/api/*`. Son cuentas de un escenario, no mediciones de tráfico real. Si no se activa el corte: hasta 42 consultas TMDB; subrecursos ausentes, varios tipos, búsquedas de keywords/proveedores o fallbacks pueden aumentar el total. No hay rate limiter distribuido propio ni caché persistente con Cache API; las cabeceras HTTP no garantizan por sí solas caché de Functions.
+Por ventana: Safe/New/Hidden usan hasta 2 páginas (1 por rama anime); Trending usa day+week, sin paginación posterior; Mix usa 1 página por fuente Discover y day+week. Máximo 12 páginas externas por respuesta, 24 por búsqueda, 6 llamadas a Discover y 3 ventanas por etapa/tipo. Hay hasta 20 ventanas por combinación. Los límites son globales: una búsqueda difícil puede detenerse antes de recorrer todas las fuentes o fallbacks. Nunca se devuelven títulos incompatibles para completar el presupuesto.
+
+Presupuesto orientativo con un tipo, sin fallback, caché fría y 6 excelentes: Safe/New/Hidden **8** llamadas TMDB (2 páginas + 6 Details anexados); Trending **8** (day+week + 6); Mix **11** (3 Discover + 2 Trending + 6). Con ambos tipos: aproximadamente 16 y 22 respectivamente. Si falta el grupo excelente, se continúa hasta 40 Details: máximo normal **24 + 40 = 64**, más catálogos fríos. Append ausente/malformado puede añadir hasta 40 llamadas de disponibilidad; este caso excepcional puede superar 100. Son presupuestos lógicos, no mediciones de latencia ni tráfico real.
+
+Se conservan caché cliente de 60 segundos/80 entradas (incluye fuentes, Details y disponibilidad) y catálogos de servidor de una hora/100 entradas. Claves incluyen ruta, tipo, país, modo, ventana y parámetros relevantes. Peticiones concurrentes se deduplican dentro de la misma señal; errores y abortos no se guardan. Details y disponibilidad se reutilizan entre fallbacks. Las cabeceras HTTP no garantizan caché persistente de Functions; no hay rate limiter distribuido propio.
 
 ## Privacidad y almacenamiento local
 
 | Clave | Uso | Límite |
 |---|---|---|
 | `qvh:region` | País elegido | Una región; EC inicial |
-| `qvh:recent` | Evitar repeticiones recientes | 30 títulos |
+| `qvh:recent` | Evitar repeticiones recientes | 100 títulos |
 | `qvh:seen` | Títulos ya vistos | 1000 títulos |
 | `qvh:disliked` | Títulos que no interesan | 1000 títulos |
 
@@ -103,7 +119,7 @@ npm run build
 bash .agents/skills/que-veo-hoy-maintainer/scripts/verify.sh
 ```
 
-La suite cubre filtros V2, anime, año/tipo, fallback, score, exclusiones, almacenamiento y borrado, país, estabilidad DOM/scroll de Ver otra, errores, API, append y early-stop, SEO, CSP, sitemap y ausencia de credenciales reales en fuentes/build. `tests/public.test.js` valida páginas y fragmentos compartidos sin navegador. Las pruebas de seguridad revisan archivos nuevos además de los existentes, sin depender de subprocessos Git.
+La suite incluye `tests/v3.test.js`: cinco fuentes, deduplicación, presupuesto global, 100 recomendaciones distintas, agotamiento, paginación, caché por modo/país/tipo y constraints en cada modo. Los tests DOM cubren mantener/cambiar modo, cancelación y agotamiento sin scroll. También cubre filtros V2, anime, año/tipo, fallback, score, exclusiones, almacenamiento y borrado, país, estabilidad DOM/scroll de Ver otra, errores, API, append y early-stop, SEO, CSP, sitemap y ausencia de credenciales reales en fuentes/build. `tests/public.test.js` valida páginas y fragmentos compartidos sin navegador. Las pruebas de seguridad revisan archivos nuevos además de los existentes, sin depender de subprocessos Git.
 
 Para QA visual pendiente, ejecutar `scripts/check-public-browser.js` con la herramienta Playwright `browser_run_code_unsafe(filename)` y `cf:dev` abierto. Usa API simulada y comprueba home, información, 404 y resultados a 320, 375, 430, 768, 1024 y 1440 px; también teclado y reflow equivalente al 200 %. Los scripts `check-v2*` conservan las regresiones históricas. No añadir tests de red TMDB a la suite principal.
 
@@ -117,8 +133,9 @@ TMDB aporta metadatos y pósteres; JustWatch aporta disponibilidad mediante TMDB
 
 Antes de monetizar, revisar licencia comercial de TMDB y requisitos de consentimiento/CMP aplicables.
 
-PWA queda pendiente: el sitio tiene favicon SVG, pero no un juego de iconos de instalación validado en 192/512 px. No se añadió manifest ni Service Worker ni caché offline de API. Priorizar QA de navegador, comprobación real de Analytics y TMDB, Search Console y protección frente a abuso según tráfico antes de sumar funciones.
+V3 cierra el alcance funcional. Quedan QA de navegador y comprobaciones operativas; después, solo correcciones de bugs reales. No se planifican PWA, cuentas ni funciones sociales.
 
 Fuentes oficiales consultadas:
+- [TMDB Trending](https://developer.themoviedb.org/reference/trending-movies), [Discover movie](https://developer.themoviedb.org/reference/discover-movie), [Discover TV](https://developer.themoviedb.org/reference/discover-tv).
 - [TMDB append](https://developer.themoviedb.org/docs/append-to-response), [movie providers](https://developer.themoviedb.org/reference/movie-watch-providers), [TV providers](https://developer.themoviedb.org/reference/tv-series-watch-providers).
 - [Cloudflare CSP](https://developers.cloudflare.com/fundamentals/reference/policies-compliances/content-security-policies/), [recolección Analytics](https://developers.cloudflare.com/web-analytics/data-metrics/data-origin-and-collection/), [rutas y 404 Pages](https://developers.cloudflare.com/pages/configuration/serving-pages/).
